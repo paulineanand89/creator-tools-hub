@@ -59,13 +59,26 @@
       }
     }
 
+    async function fetchPerformance(url){
+      try {
+        const api = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=" + encodeURIComponent(url);
+        const res = await fetch(api);
+        if(!res.ok) return null;
+        const data = await res.json();
+        const score = data.lighthouseResult.categories.performance.score * 100;
+        return score;
+      } catch(e){
+        return null;
+      }
+    }
+
     async function checkReadiness(url, html){
       const output = [];
       let score = 0;
       let totalChecks = 5; // ads.txt, AdSense script, Ad unit, robots.txt, canonical
+      let bonus = 0;
 
       // --- AdSense checks ---
-      // ads.txt
       try {
         const adsTxtUrl = new URL("/ads.txt", url).href;
         const adsRes = await fetchHtml(adsTxtUrl);
@@ -79,104 +92,73 @@
         output.push("❌ ads.txt file: Missing");
       }
 
-      // AdSense script
       const hasScriptAds = html.includes("pagead2.googlesyndication.com/pagead/js/adsbygoogle.js");
-      if(hasScriptAds){
-        output.push("✅ AdSense script: Found");
-        score++;
-      } else {
-        output.push("❌ AdSense script: Missing");
-      }
+      if(hasScriptAds){ output.push("✅ AdSense script: Found"); score++; }
+      else { output.push("❌ AdSense script: Missing"); }
 
-      // Ad unit
       const hasAdUnits = html.includes("class=\"adsbygoogle\"");
-      if(hasAdUnits){
-        output.push("✅ Ad unit tags: Found");
-        score++;
-      } else {
-        output.push("❌ Ad unit tags: Missing");
-      }
+      if(hasAdUnits){ output.push("✅ Ad unit tags: Found"); score++; }
+      else { output.push("❌ Ad unit tags: Missing"); }
 
       // --- SEO checks ---
-      // robots.txt
       try {
         const robotsUrl = new URL("/robots.txt", url).href;
         const robotsRes = await fetchHtml(robotsUrl);
-        if(robotsRes){
-          output.push("✅ robots.txt file: Found");
-          score++;
-        } else {
-          output.push("❌ robots.txt file: Missing");
-        }
-      } catch {
-        output.push("❌ robots.txt file: Missing");
-      }
+        if(robotsRes){ output.push("✅ robots.txt file: Found"); score++; }
+        else { output.push("❌ robots.txt file: Missing"); }
+      } catch { output.push("❌ robots.txt file: Missing"); }
 
-      // canonical tag
       const canonicalMatch = html.match(/<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i);
-      if(canonicalMatch){
-        output.push("✅ Canonical tag: Found → " + canonicalMatch[1]);
-        score++;
-      } else {
-        output.push("❌ Canonical tag: Missing");
-      }
+      if(canonicalMatch){ output.push("✅ Canonical tag: Found → " + canonicalMatch[1]); score++; }
+      else { output.push("❌ Canonical tag: Missing"); }
 
       // --- Bonus checks ---
-      let bonus = 0;
+      if(url.startsWith("https://")){ output.push("✅ HTTPS: Secure connection"); bonus += 5; }
+      else { output.push("❌ HTTPS: Not secure"); }
 
-      // HTTPS check
-      if(url.startsWith("https://")){
-        output.push("✅ HTTPS: Secure connection");
-        bonus += 5;
-      } else {
-        output.push("❌ HTTPS: Not secure");
-      }
+      if(html.includes("<meta name=\"viewport\"")){ output.push("✅ Mobile-friendly viewport meta: Found"); bonus += 5; }
+      else { output.push("❌ Mobile-friendly viewport meta: Missing"); }
 
-      // Mobile-friendly meta viewport
-      const hasViewport = html.includes("<meta name=\"viewport\"");
-      if(hasViewport){
-        output.push("✅ Mobile-friendly viewport meta: Found");
-        bonus += 5;
-      } else {
-        output.push("❌ Mobile-friendly viewport meta: Missing");
-      }
-
-      // Sitemap.xml
       try {
         const sitemapUrl = new URL("/sitemap.xml", url).href;
         const sitemapRes = await fetchHtml(sitemapUrl);
-        if(sitemapRes && sitemapRes.includes("<urlset")){
-          output.push("✅ sitemap.xml: Found");
-          bonus += 5;
-        } else {
-          output.push("❌ sitemap.xml: Missing");
-        }
-      } catch {
-        output.push("❌ sitemap.xml: Missing");
-      }
+        if(sitemapRes && sitemapRes.includes("<urlset")){ output.push("✅ sitemap.xml: Found"); bonus += 5; }
+        else { output.push("❌ sitemap.xml: Missing"); }
+      } catch { output.push("❌ sitemap.xml: Missing"); }
 
-      // Meta description
       const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
-      if(metaDescMatch){
-        output.push("✅ Meta description: Found → " + metaDescMatch[1]);
-        bonus += 5;
-      } else {
-        output.push("❌ Meta description: Missing");
-      }
+      if(metaDescMatch){ output.push("✅ Meta description: Found → " + metaDescMatch[1]); bonus += 5; }
+      else { output.push("❌ Meta description: Missing"); }
 
-      // Title tag
       const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
-      if(titleMatch){
-        output.push("✅ Title tag: Found → " + titleMatch[1]);
-        bonus += 5;
+      if(titleMatch){ output.push("✅ Title tag: Found → " + titleMatch[1]); bonus += 5; }
+      else { output.push("❌ Title tag: Missing"); }
+
+      const hasPrivacy = html.toLowerCase().includes("privacy policy");
+      const hasTerms = html.toLowerCase().includes("terms of service") || html.toLowerCase().includes("terms and conditions");
+      if(hasPrivacy){ output.push("✅ Privacy Policy page/link: Found"); bonus += 5; }
+      else { output.push("❌ Privacy Policy page/link: Missing"); }
+      if(hasTerms){ output.push("✅ Terms of Service page/link: Found"); bonus += 5; }
+      else { output.push("❌ Terms of Service page/link: Missing"); }
+
+      const bodyText = html.replace(/<[^>]*>/g, " ").trim();
+      const wordCount = bodyText.split(/\s+/).length;
+      if(wordCount >= 300){ output.push("✅ Content length: " + wordCount + " words (sufficient)"); bonus += 10; }
+      else { output.push("❌ Content length: " + wordCount + " words (too short)"); }
+
+      // --- Performance check ---
+      const perfScore = await fetchPerformance(url);
+      if(perfScore !== null){
+        output.push("✅ Performance score (PageSpeed): " + perfScore + "/100");
+        bonus += Math.round(perfScore / 20); // up to +5 bonus
       } else {
-        output.push("❌ Title tag: Missing");
+        output.push("❌ Performance score: Could not fetch");
       }
 
       // Calculate percentage score
       const basePercentage = Math.round((score / totalChecks) * 100);
       const totalScore = basePercentage + bonus;
-      const summary = `Readiness Score: ${basePercentage}/100\nBonus Points: +${bonus}\nFinal Score: ${totalScore}/140`;
+      const summary = `Readiness Score: ${basePercentage}/100\nBonus Points: +${bonus}\nFinal Score: ${totalScore}/165`;
 
       return summary + "\n\n" + output.join("\n");
     }
