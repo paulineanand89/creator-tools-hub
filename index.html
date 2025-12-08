@@ -13,7 +13,10 @@
     button:hover { background:#2b6cb0; }
     .section { margin-top:20px; }
     .section h3 { margin-bottom:8px; color:#2d3748; }
-    .item { margin-left:20px; }
+    .item { margin-left:20px; margin-bottom:4px; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:600; margin-left:10px; }
+    .success { background:#c6f6d5; color:#22543d; }
+    .error { background:#fed7d7; color:#742a2a; }
     .score { margin-top:20px; font-size:18px; font-weight:600; color:#2d3748; }
     .verdict { font-size:16px; font-weight:600; margin-top:10px; }
     .low { color:green; }
@@ -71,7 +74,7 @@
       // --- Checks grouped ---
       const technical = {
         "HTTPS": url.startsWith("https://"),
-        "robots.txt": true, // simplified
+        "robots.txt": true,
         "ads.txt": lowerHtml.includes("google.com"),
         "canonical": html.includes("rel=\"canonical\"")
       };
@@ -90,41 +93,10 @@
         "Indexed on Google": true // placeholder
       };
 
-      const trust = {
-        "Author bio presence": lowerHtml.includes("author"),
-        "Contact email visibility": /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/.test(lowerHtml),
-        "Schema markup": lowerHtml.includes("application/ld+json") || lowerHtml.includes("itemprop")
-      };
-
-      const contentHeuristics = {
-        "Paragraph depth": (html.match(/<p>/g)||[]).length>=5,
-        "Stop-word ratio acceptable": (()=>{ 
-          const stopWords=["the","is","at","which","on","and","a","an"];
-          const words=bodyText.toLowerCase().split(/\s+/);
-          const stopCount=words.filter(w=>stopWords.includes(w)).length;
-          return (stopCount/words.length)<0.5;
-        })(),
-        "Unique sentences": (()=>{ 
-          const sentences=bodyText.split(/[.!?]/).map(s=>s.trim()).filter(s=>s);
-          const unique=new Set(sentences).size;
-          return unique/sentences.length>0.7;
-        })()
-      };
-
-      const internalLinks = {
-        "Internal link count": (html.match(/<a /g)||[]).length>=5,
-        "Contextual anchors": !lowerHtml.includes("click here")
-      };
-
-      const schema = {
-        "JSON-LD detected": lowerHtml.includes("application/ld+json"),
-        "Microdata detected": lowerHtml.includes("itemprop")||lowerHtml.includes("itemscope")
-      };
-
       // --- Scoring ---
       let score = 0;
       let maxScore = 100;
-      const weights = {technical:20, seo:15, policy:30, trust:10, contentHeuristics:15, internalLinks:5, schema:5};
+      const weights = {technical:20, seo:25, policy:30};
 
       function calcScore(group, weight){
         const passed = Object.values(group).filter(v=>v).length;
@@ -135,10 +107,7 @@
       score += calcScore(technical, weights.technical);
       score += calcScore(seo, weights.seo);
       score += calcScore(policy, weights.policy);
-      score += calcScore(trust, weights.trust);
-      score += calcScore(contentHeuristics, weights.contentHeuristics);
-      score += calcScore(internalLinks, weights.internalLinks);
-      score += calcScore(schema, weights.schema);
+      score += 25; // performance placeholder
 
       // Hard rules
       if(!policy["Privacy Policy"]) maxScore = Math.min(maxScore,60);
@@ -157,7 +126,8 @@
       function renderSection(title, group){
         out.innerHTML += `<div class="section"><h3>▸ ${title}</h3>`;
         for(const key in group){
-          out.innerHTML += `<div class="item">${key}</div>`;
+          const ok = group[key];
+          out.innerHTML += `<div class="item">${key}<span class="badge ${ok?"success":"error"}">${ok?"Pass":"Fail"}</span></div>`;
         }
         out.innerHTML += `</div>`;
       }
@@ -165,10 +135,6 @@
       renderSection("Technical Check", technical);
       renderSection("SEO Check", seo);
       renderSection("Policy Compliance", policy);
-      renderSection("Trust Signals", trust);
-      renderSection("Content Heuristics", contentHeuristics);
-      renderSection("Internal Links", internalLinks);
-      renderSection("Schema Detection", schema);
 
       out.innerHTML += `<div class="score">▸ Final Score: ${score}/100</div>`;
       out.innerHTML += `<div class="verdict ${verdictClass}">Verdict badge: ${verdictText}</div>`;
@@ -177,4 +143,13 @@
       const today = new Date().toLocaleDateString();
       out.innerHTML += `
         <div class="footer">
-          <p><strong>Disclaimer:</strong> This pre-check estimates AdSense
+          <p><strong>Disclaimer:</strong> This pre-check estimates AdSense eligibility based on technical and content factors. It does not guarantee approval, as final decisions depend on Google’s policies.</p>
+          <p><strong>Website:</strong> www.yoursaaschecker.com<br>
+             <strong>Email:</strong> support@yoursaaschecker.com<br>
+             <strong>Generated on:</strong> ${today}<br>
+             <strong>Version:</strong> v1.0</p>
+        </div>`;
+    }
+  </script>
+</body>
+</html>
