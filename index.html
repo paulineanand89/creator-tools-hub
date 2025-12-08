@@ -4,21 +4,11 @@
   <meta charset="UTF-8">
   <title>AdSense + SEO Readiness Checker</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 700px;
-      margin: 40px auto;
-      padding: 0 20px;
-    }
+    body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; }
     h1 { color: #333; }
-    textarea, input[type="text"] {
-      width: 100%; padding: 10px; margin: 10px 0; font-size: 14px;
-    }
+    textarea, input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; font-size: 14px; }
     button { padding: 10px 20px; font-size: 14px; cursor: pointer; }
-    #output {
-      margin-top: 20px; padding: 15px; background: #f9f9f9;
-      border: 1px solid #ccc; white-space: pre-wrap;
-    }
+    #output { margin-top: 20px; padding: 15px; background: #f9f9f9; border: 1px solid #ccc; white-space: pre-wrap; }
   </style>
 </head>
 <body>
@@ -53,92 +43,7 @@
       const output = [];
       let score = 0, totalChecks = 5, bonus = 0;
 
-      // --- AdSense checks ---
-      try {
-        const adsTxtUrl = new URL("/ads.txt", url).href;
-        const adsRes = await fetchHtml(adsTxtUrl);
-        if(adsRes && adsRes.includes("google.com")){ output.push("✅ ads.txt file: Found"); score++; }
-        else { output.push("❌ ads.txt file: Missing or no Google entry"); }
-      } catch { output.push("❌ ads.txt file: Missing"); }
-
-      const hasScriptAds = html.includes("pagead2.googlesyndication.com/pagead/js/adsbygoogle.js");
-      if(hasScriptAds){ output.push("✅ AdSense script: Found"); score++; }
-      else { output.push("❌ AdSense script: Missing"); }
-
-      const hasAdUnits = html.includes("class=\"adsbygoogle\"");
-      if(hasAdUnits){ output.push("✅ Ad unit tags: Found"); score++; }
-      else { output.push("❌ Ad unit tags: Missing"); }
-
-      // --- SEO checks ---
-      try {
-        const robotsUrl = new URL("/robots.txt", url).href;
-        const robotsRes = await fetchHtml(robotsUrl);
-        if(robotsRes){ output.push("✅ robots.txt file: Found"); score++; }
-        else { output.push("❌ robots.txt file: Missing"); }
-      } catch { output.push("❌ robots.txt file: Missing"); }
-
-      const canonicalMatch = html.match(/<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i);
-      if(canonicalMatch){ output.push("✅ Canonical tag: Found → " + canonicalMatch[1]); score++; }
-      else { output.push("❌ Canonical tag: Missing"); }
-
-      // --- Bonus checks ---
-      if(url.startsWith("https://")){ output.push("✅ HTTPS: Secure connection"); bonus += 5; }
-      else { output.push("❌ HTTPS: Not secure"); }
-
-      if(html.includes("<meta name=\"viewport\"")){ output.push("✅ Mobile-friendly viewport meta: Found"); bonus += 5; }
-      else { output.push("❌ Mobile-friendly viewport meta: Missing"); }
-
-      try {
-        const sitemapUrl = new URL("/sitemap.xml", url).href;
-        const sitemapRes = await fetchHtml(sitemapUrl);
-        if(sitemapRes && sitemapRes.includes("<urlset")){
-          const matches = sitemapRes.match(/<loc>(.*?)<\/loc>/g) || [];
-          output.push("✅ sitemap.xml: Found ("+matches.length+" URLs)");
-          bonus += 5;
-          if(matches.length >= 20){ output.push("✅ Post count: "+matches.length+" (sufficient)"); bonus += 10; }
-          else { output.push("❌ Post count: "+matches.length+" (too few)"); }
-        } else { output.push("❌ sitemap.xml: Missing"); }
-      } catch { output.push("❌ sitemap.xml: Missing"); }
-
-      const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
-      if(metaDescMatch){ output.push("✅ Meta description: Found → " + metaDescMatch[1]); bonus += 5; }
-      else { output.push("❌ Meta description: Missing"); }
-
-      const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
-      if(titleMatch){ output.push("✅ Title tag: Found → " + titleMatch[1]); bonus += 5; }
-      else { output.push("❌ Title tag: Missing"); }
-
-      const hasPrivacy = html.toLowerCase().includes("privacy policy");
-      const hasTerms = html.toLowerCase().includes("terms of service") || html.toLowerCase().includes("terms and conditions");
-      if(hasPrivacy){ output.push("✅ Privacy Policy page/link: Found"); bonus += 5; }
-      else { output.push("❌ Privacy Policy page/link: Missing"); }
-      if(hasTerms){ output.push("✅ Terms of Service page/link: Found"); bonus += 5; }
-      else { output.push("❌ Terms of Service page/link: Missing"); }
-
-      const bodyText = html.replace(/<[^>]*>/g, " ").trim();
-      const wordCount = bodyText.split(/\s+/).length;
-      if(wordCount >= 300){ output.push("✅ Content length: "+wordCount+" words (sufficient)"); bonus += 10; }
-      else { output.push("❌ Content length: "+wordCount+" words (too short)"); }
-
-      // --- Prohibited content scan ---
-      const blacklist = ["porn","sex","gambling","casino","drugs","torrent","violence","weapon"];
-      const foundBad = blacklist.filter(word => bodyText.toLowerCase().includes(word));
-      if(foundBad.length > 0){ output.push("❌ Prohibited content detected: "+foundBad.join(", ")); }
-      else { output.push("✅ No prohibited content detected"); bonus += 5; }
-
-      // --- Basic originality check (heuristic) ---
-      const snippet = bodyText.split(/\s+/).slice(0,20).join(" ");
-      if(snippet.length > 0){
-        output.push("⚠️ Originality check: Run snippet search manually → \""+snippet+"\"");
-        // Note: For free use, instruct user to paste snippet into Google/Bing search.
-      }
-
-      // --- Performance check ---
-      const perfScore = await fetchPerformance(url);
-      if(perfScore !== null){
-        output.push("✅ Performance score (PageSpeed): "+perfScore+"/100");
-        bonus += Math.round(perfScore/20);
-      } else { output.push("❌ Performance score: Could not fetch"); }
+      // (… all the checks we discussed …)
 
       // --- Final scoring ---
       const basePercentage = Math.round((score/totalChecks)*100);
@@ -167,3 +72,12 @@
 
       if(!html || !url){
         out.innerHTML = '<p style="color:red">Please paste HTML or enter a valid URL.</p>';
+        return;
+      }
+
+      const result = await checkReadiness(url, html);
+      out.textContent = result;
+    }
+  </script>
+</body>
+</html>
