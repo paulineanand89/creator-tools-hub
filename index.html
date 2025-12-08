@@ -11,18 +11,20 @@
     textarea, input[type="text"] { width:100%; padding:12px; margin:10px 0; border:1px solid #cbd5e0; border-radius:6px; font-size:14px; }
     button { background:#3182ce; color:#fff; border:none; padding:12px 20px; border-radius:6px; font-size:14px; cursor:pointer; transition:background 0.2s; }
     button:hover { background:#2b6cb0; }
-    .section { margin-top:20px; }
-    .section h3 { margin-bottom:8px; color:#2d3748; }
-    .item { margin-left:20px; margin-bottom:4px; }
-    .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:600; margin-left:10px; }
+    .progress { background:#edf2f7; border-radius:6px; overflow:hidden; margin:10px 0; height:14px; }
+    .bar { height:14px; }
+    .badge { display:inline-block; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; margin-left:10px; }
     .success { background:#c6f6d5; color:#22543d; }
     .error { background:#fed7d7; color:#742a2a; }
     .score { margin-top:20px; font-size:18px; font-weight:600; color:#2d3748; }
     .verdict { font-size:16px; font-weight:600; margin-top:10px; }
-    .low { color:green; }
-    .medium { color:orange; }
-    .high { color:red; }
-    .footer { margin-top:30px; padding-top:15px; border-top:1px solid #e2e8f0; font-size:13px; color:#4a5568; }
+    .affiliate { margin-top:20px; padding:15px; background:#f7fafc; border:1px solid #e2e8f0; border-radius:6px; }
+    /* Category colors */
+    .trust { background:#48bb78; }      /* green */
+    .content { background:#ed8936; }    /* orange */
+    .seo { background:#4299e1; }        /* blue */
+    .technical { background:#9f7aea; }  /* purple */
+    .performance { background:#f6e05e; }/* yellow */
   </style>
 </head>
 <body>
@@ -46,35 +48,6 @@
       } catch(e) { return null; }
     }
 
-    // Extended proxy logic: crawl common policy pages
-    async function checkPolicyPages(baseUrl){
-      const paths = {
-        "Privacy Policy": ["/privacy-policy","/privacy"],
-        "About page": ["/about"],
-        "Contact page": ["/contact"],
-        "Terms & Disclaimer": ["/terms","/disclaimer"]
-      };
-      const results = {};
-      for(const label in paths){
-        results[label] = false;
-        for(const path of paths[label]){
-          try {
-            const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(baseUrl + path);
-            const res = await fetch(endpoint);
-            if(res.ok){
-              const html = await res.text();
-              const lower = html.toLowerCase();
-              if(lower.includes("privacy") || lower.includes("about") || lower.includes("contact") || lower.includes("terms") || lower.includes("disclaimer")){
-                results[label] = true;
-                break; // stop once found
-              }
-            }
-          } catch(e){ /* ignore */ }
-        }
-      }
-      return results;
-    }
-
     async function runChecker(){
       const htmlBox = document.getElementById("htmlInput");
       const urlBox = document.getElementById("urlInput");
@@ -96,84 +69,80 @@
         return;
       }
 
+      // --- Checks ---
+      const checks = {
+        trust: [],
+        content: [],
+        seo: [],
+        technical: [],
+        performance: []
+      };
+
+      // Trust pages
       const lowerHtml = html.toLowerCase();
+      checks.trust.push({label:"Privacy Policy", ok: lowerHtml.includes("privacy policy")});
+      checks.trust.push({label:"About Page", ok: lowerHtml.includes("about")});
+      checks.trust.push({label:"Contact Page", ok: lowerHtml.includes("contact")});
+
+      // Content quality
       const bodyText = html.replace(/<[^>]*>/g," ").trim();
       const wordCount = bodyText.split(/\s+/).length;
+      checks.content.push({label:"Word Count ≥ 800", ok: wordCount>=800});
+      checks.content.push({label:"Has Headers", ok: html.includes("<h1")||html.includes("<h2")});
 
-      // --- Checks grouped ---
-      const technical = {
-        "HTTPS": url.startsWith("https://"),
-        "robots.txt": true,
-        "ads.txt": lowerHtml.includes("google.com"),
-        "canonical": html.includes("rel=\"canonical\"")
-      };
+      // SEO basics
+      checks.seo.push({label:"Title Tag", ok: html.includes("<title>")});
+      checks.seo.push({label:"Meta Description", ok: html.includes("name=\"description\"")});
+      checks.seo.push({label:"Canonical Tag", ok: html.includes("rel=\"canonical\"")});
 
-      const seo = {
-        "Title optimization": html.includes("<title>"),
-        "Meta description": html.includes("name=\"description\""),
-        "Header tags": html.includes("<h1")||html.includes("<h2"),
-        "Content depth": wordCount>=800
-      };
+      // Technical
+      checks.technical.push({label:"HTTPS", ok: url.startsWith("https://")});
+      checks.technical.push({label:"robots.txt", ok: true}); // simplified
+      checks.technical.push({label:"Viewport Meta", ok: html.includes("viewport")});
+      checks.technical.push({label:"ads.txt", ok: html.includes("google.com")});
 
-      // Crawl policy pages (await results!)
-      const policyResults = await checkPolicyPages(url);
-      const policy = {
-        "Privacy Policy": policyResults["Privacy Policy"],
-        "About page": policyResults["About page"],
-        "Contact page": policyResults["Contact page"],
-        "Terms & Disclaimer": policyResults["Terms & Disclaimer"],
-        "Indexed on Google": true // placeholder
-      };
+      // Performance (placeholder)
+      checks.performance.push({label:"Basic Speed Check", ok: true});
 
       // --- Scoring ---
       let score = 0;
       let maxScore = 100;
-      const weights = {technical:20, seo:25, policy:30};
+      const weights = {trust:30, content:25, seo:15, technical:20, performance:10};
 
-      function calcScore(group, weight){
-        const passed = Object.values(group).filter(v=>v).length;
-        const total = Object.keys(group).length;
-        return Math.round((passed/total)*weight);
+      for(const cat in checks){
+        const catChecks = checks[cat];
+        const passed = catChecks.filter(c=>c.ok).length;
+        const total = catChecks.length;
+        score += Math.round((passed/total)*weights[cat]);
       }
 
-      const techScore = calcScore(technical, weights.technical);
-      const seoScore = calcScore(seo, weights.seo);
-      const policyScore = calcScore(policy, weights.policy);
-
-      score += techScore + seoScore + policyScore + 25; // performance placeholder
-
       // Hard rules
-      if(!policy["Privacy Policy"]) maxScore = Math.min(maxScore,60);
-      if(!technical["HTTPS"]) maxScore = Math.min(maxScore,50);
-      if(!seo["Content depth"]) maxScore = Math.min(maxScore,55);
+      if(!checks.trust[0].ok) maxScore = Math.min(maxScore,60);
+      if(!checks.technical[0].ok) maxScore = Math.min(maxScore,50);
+      if(!checks.content[0].ok) maxScore = Math.min(maxScore,55);
       if(score>maxScore) score=maxScore;
 
       // Verdict
-      let verdictClass="low", verdictText="🟢 Low Approval Risk";
-      if(score<60){ verdictClass="high"; verdictText="🔴 High Risk"; }
-      else if(score<80){ verdictClass="medium"; verdictText="🟡 Medium Risk"; }
+      let verdict="Low Risk";
+      if(score<60) verdict="High Approval Risk";
+      else if(score<80) verdict="Medium Risk";
 
       // --- Output ---
       out.innerHTML = "";
-
-      function renderSection(title, group, percent){
-        out.innerHTML += `<div class="section"><h3>▸ ${title} (${percent}%)</h3>`;
-        for(const key in group){
-          const ok = group[key];
-          out.innerHTML += `<div class="item">${key}<span class="badge ${ok?"success":"error"}">${ok?"Pass":"Fail"}</span></div>`;
-        }
-        out.innerHTML += `</div>`;
+      for(const cat in checks){
+        out.innerHTML += `<h3>${cat.toUpperCase()}</h3>`;
+        checks[cat].forEach(c=>{
+          out.innerHTML += `<div>${c.label}<span class="badge ${c.ok?"success":"error"}">${c.ok?"Pass":"Fail"}</span></div>`;
+        });
+        const catScore = Math.round((checks[cat].filter(c=>c.ok).length/checks[cat].length)*weights[cat]);
+        out.innerHTML += `<div class="progress"><div class="bar ${cat}" style="width:${catScore}%"></div></div>`;
       }
+      out.innerHTML += `<div class="score">Final Score: ${score}/100</div>`;
+      out.innerHTML += `<div class="verdict">${verdict}</div>`;
+      out.innerHTML += `<button onclick="window.print()">Download Free Report (PDF)</button>`;
+      out.innerHTML += `<div class="affiliate"><strong>Recommended Tools:</strong><br>Improve speed with Hostinger<br>Use Cloudflare Free CDN<br>Install RankMath SEO Plugin</div>`;
+    }
+  </script>
+</body>
+</html>
 
-      renderSection("Technical Check", technical, techScore);
-      renderSection("SEO Check", seo, seoScore);
-      renderSection("Policy Compliance", policy, policyScore);
-
-      out.innerHTML += `<div class="score">▸ Final Score: ${score}/100</div>`;
-      out.innerHTML += `<div class="verdict ${verdictClass}">Verdict badge: ${verdictText}</div>`;
-
-      // Disclaimer + Branding
-      const today = new Date().toLocaleDateString();
-      out.innerHTML += `
-        <div class="footer">
-          <p><strong>Disclaimer:</strong> This pre-check estimates AdSense eligibility based on technical and content factors. It does not
