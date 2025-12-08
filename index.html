@@ -86,18 +86,45 @@
       if(titleMatch){ output.push("✅ Title tag: Found → " + titleMatch[1]); bonus += 5; }
       else { output.push("❌ Title tag: Missing"); }
 
-      const hasPrivacy = html.toLowerCase().includes("privacy policy");
-      const hasTerms = html.toLowerCase().includes("terms of service") || html.toLowerCase().includes("terms and conditions");
-      if(hasPrivacy){ output.push("✅ Privacy Policy page/link: Found"); bonus += 5; }
-      else { output.push("❌ Privacy Policy page/link: Missing"); }
-      if(hasTerms){ output.push("✅ Terms of Service page/link: Found"); bonus += 5; }
-      else { output.push("❌ Terms of Service page/link: Missing"); }
+      // --- Policy page detection (broader keywords) ---
+      const lowerHtml = html.toLowerCase();
+      const policyKeywords = [
+        "privacy policy","privacy notice","privacy & policy",
+        "terms of service","terms of use","terms & conditions","terms and conditions",
+        "legal","legal notice","cookie policy","cookies"
+      ];
+      const foundPolicies = policyKeywords.filter(k => lowerHtml.includes(k));
+      if(foundPolicies.length > 0){
+        output.push("✅ Policy pages detected: " + foundPolicies.join(", "));
+        bonus += 5;
+      } else {
+        output.push("❌ Policy pages: Missing");
+      }
 
+      // --- Content length ---
       const bodyText = html.replace(/<[^>]*>/g, " ").trim();
       const wordCount = bodyText.split(/\s+/).length;
       if(wordCount >= 300){ output.push("✅ Content length: "+wordCount+" words (sufficient)"); bonus += 10; }
       else { output.push("❌ Content length: "+wordCount+" words (too short)"); }
 
+      // --- Prohibited content scan (basic) ---
+      const blacklist = [
+        "porn","sex","xxx","escort","adult",
+        "gambling","casino","betting",
+        "drugs","narcotics","steroids",
+        "torrent","pirated","warez",
+        "violence","gore","weapon","gun","knife"
+      ];
+      const lowerText = bodyText.toLowerCase();
+      const foundBad = blacklist.filter(word => lowerText.includes(word));
+      if(foundBad.length > 0){
+        output.push("❌ Prohibited content detected: " + foundBad.join(", "));
+      } else {
+        output.push("✅ No prohibited content detected");
+        bonus += 5;
+      }
+
+      // --- Performance check ---
       const perfScore = await fetchPerformance(url);
       if(perfScore !== null){
         output.push("✅ Performance score (PageSpeed): "+perfScore+"/100");
