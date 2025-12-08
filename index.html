@@ -20,14 +20,16 @@
   <div id="output"></div>
 
   <script>
-    // --- Updated to use AllOrigins ---
     async function fetchHtml(url){
       try {
-        const endpoint = "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+        const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(url);
         const res = await fetch(endpoint);
         if(!res.ok) return null;
         return await res.text();
-      } catch(e) { return null; }
+      } catch(e) {
+        console.error("Fetch error:", e);
+        return null;
+      }
     }
 
     async function fetchPerformance(url){
@@ -44,7 +46,7 @@
       const output = [];
       let score = 0, totalChecks = 5, bonus = 0;
 
-      // --- AdSense checks ---
+      // AdSense checks
       try {
         const adsTxtUrl = new URL("/ads.txt", url).href;
         const adsRes = await fetchHtml(adsTxtUrl);
@@ -60,7 +62,7 @@
       if(hasAdUnits){ output.push("✅ Ad unit tags: Found"); score++; }
       else { output.push("❌ Ad unit tags: Missing"); }
 
-      // --- SEO checks ---
+      // SEO checks
       try {
         const robotsUrl = new URL("/robots.txt", url).href;
         const robotsRes = await fetchHtml(robotsUrl);
@@ -72,7 +74,7 @@
       if(canonicalMatch){ output.push("✅ Canonical tag: Found → " + canonicalMatch[1]); score++; }
       else { output.push("❌ Canonical tag: Missing"); }
 
-      // --- Bonus checks ---
+      // Bonus checks
       if(url.startsWith("https://")){ output.push("✅ HTTPS: Secure connection"); bonus += 5; }
       else { output.push("❌ HTTPS: Not secure"); }
 
@@ -87,7 +89,6 @@
       if(titleMatch){ output.push("✅ Title tag: Found → " + titleMatch[1]); bonus += 5; }
       else { output.push("❌ Title tag: Missing"); }
 
-      // --- Policy page detection ---
       const lowerHtml = html.toLowerCase();
       const policyKeywords = [
         "privacy policy","privacy notice","privacy & policy",
@@ -102,13 +103,11 @@
         output.push("❌ Policy pages: Missing");
       }
 
-      // --- Content length ---
       const bodyText = html.replace(/<[^>]*>/g, " ").trim();
       const wordCount = bodyText.split(/\s+/).length;
       if(wordCount >= 300){ output.push("✅ Content length: "+wordCount+" words (sufficient)"); bonus += 10; }
       else { output.push("❌ Content length: "+wordCount+" words (too short)"); }
 
-      // --- Prohibited content scan ---
       const blacklist = [
         "porn","sex","xxx","escort","adult",
         "gambling","casino","betting",
@@ -125,14 +124,12 @@
         bonus += 5;
       }
 
-      // --- Performance check ---
       const perfScore = await fetchPerformance(url);
       if(perfScore !== null){
         output.push("✅ Performance score (PageSpeed): "+perfScore+"/100");
         bonus += Math.round(perfScore/20);
       } else { output.push("❌ Performance score: Could not fetch"); }
 
-      // --- Final scoring ---
       const basePercentage = Math.round((score/totalChecks)*100);
       const totalScore = basePercentage + bonus;
       const summary = `Readiness Score: ${basePercentage}/100\nBonus Points: +${bonus}\nFinal Score: ${totalScore}/165`;
