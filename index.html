@@ -20,19 +20,14 @@
   <div id="output"></div>
 
   <script>
-    // --- Updated fetchHtml with fallback (Vercel first, then Netlify) ---
+    // --- Only Vercel proxy ---
     async function fetchHtml(url){
-      const endpoints = [
-        "https://ad-sense-proxy-lr1n-ap79pubcj-paulines-projects-d0068dd5.vercel.app/api/proxy?url=",
-        "https://creator-tools-hub.netlify.app/.netlify/functions/fetch-proxy?url="
-      ];
-      for(const base of endpoints){
-        try {
-          const res = await fetch(base + encodeURIComponent(url));
-          if(res.ok) return await res.text();
-        } catch(e){ continue; }
-      }
-      return null;
+      try {
+        const endpoint = "https://ad-sense-proxy-lr1n-ap79pubcj-paulines-projects-d0068dd5.vercel.app/api/proxy?url=" + encodeURIComponent(url);
+        const res = await fetch(endpoint);
+        if(!res.ok) return null;
+        return await res.text();
+      } catch(e) { return null; }
     }
 
     async function fetchPerformance(url){
