@@ -19,7 +19,7 @@
     .score { margin-top:20px; font-size:18px; font-weight:600; color:#2d3748; }
     .verdict { font-size:16px; font-weight:600; margin-top:10px; }
     .affiliate { margin-top:20px; padding:15px; background:#f7fafc; border:1px solid #e2e8f0; border-radius:6px; }
-    /* Category colors */
+    .trust { background:#48bb78; }
     .content { background:#ed8936; }
     .seo { background:#4299e1; }
     .technical { background:#9f7aea; }
@@ -37,102 +37,132 @@
     <div id="output"></div>
   </div>
 
-  <script>
-    async function fetchHtml(url){
+<script>
+// -------- Crawl policy pages strictly --------
+async function checkPolicyPages(baseUrl){
+  const paths = {
+    "Privacy Policy": ["/privacy-policy","/privacy"],
+    "About Page": ["/about","/about-us"],
+    "Contact Page": ["/contact","/contact-us"],
+    "Terms / Disclaimer": ["/terms","/disclaimer"]
+  };
+  const results = {};
+  for(const label in paths){
+    results[label] = false;
+    for(const path of paths[label]){
+      let fullUrl = baseUrl.replace(/\/$/, "") + path;
       try {
-        const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(url);
+        const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(fullUrl);
         const res = await fetch(endpoint);
-        if(!res.ok) return null;
-        return await res.text();
-      } catch(e) { return null; }
-    }
-
-    async function runChecker(){
-      const htmlBox = document.getElementById("htmlInput");
-      const urlBox = document.getElementById("urlInput");
-      const out = document.getElementById("output");
-      out.innerHTML = "<p>Checking...</p>";
-
-      let html = htmlBox.value.trim();
-      const url = urlBox.value.trim();
-
-      if(!html && url){
-        html = await fetchHtml(url);
-        if(!html){
-          out.innerHTML = "<p style='color:red'>Could not fetch this URL.</p>";
-          return;
+        if(res.ok){
+          const html = await res.text();
+          const lower = html.toLowerCase();
+          if(
+            (label==="Privacy Policy" && lower.includes("privacy")) ||
+            (label==="About Page" && lower.includes("about")) ||
+            (label==="Contact Page" && (lower.includes("contact") || lower.includes("email") || lower.includes("phone"))) ||
+            (label==="Terms / Disclaimer" && (lower.includes("terms") || lower.includes("disclaimer")))
+          ){
+            results[label] = true;
+            break;
+          }
         }
-      }
-      if(!html || !url){
-        out.innerHTML = "<p style='color:red'>Please paste HTML or enter a valid URL.</p>";
-        return;
-      }
-
-      // --- Checks ---
-      const checks = {
-        content: [],
-        seo: [],
-        technical: [],
-        performance: []
-      };
-
-      // Content quality
-      const bodyText = html.replace(/<[^>]*>/g," ").trim();
-      const wordCount = bodyText.split(/\s+/).length;
-      checks.content.push({label:"Word Count ≥ 800", ok: wordCount>=800});
-      checks.content.push({label:"Has Headers", ok: html.includes("<h1")||html.includes("<h2")});
-
-      // SEO basics
-      checks.seo.push({label:"Title Tag", ok: html.includes("<title>")});
-      checks.seo.push({label:"Meta Description", ok: html.includes("name=\"description\"")});
-      checks.seo.push({label:"Canonical Tag", ok: html.includes("rel=\"canonical\"")});
-
-      // Technical
-      checks.technical.push({label:"HTTPS", ok: url.startsWith("https://")});
-      checks.technical.push({label:"robots.txt", ok: true}); // simplified
-      checks.technical.push({label:"Viewport Meta", ok: html.includes("viewport")});
-      checks.technical.push({label:"ads.txt", ok: html.includes("google.com")});
-
-      // Performance (placeholder)
-      checks.performance.push({label:"Basic Speed Check", ok: true});
-
-      // --- Scoring ---
-      let score = 0;
-      let maxScore = 100;
-      const weights = {content:25, seo:25, technical:25, performance:25};
-
-      for(const cat in checks){
-        const catChecks = checks[cat];
-        const passed = catChecks.filter(c=>c.ok).length;
-        const total = catChecks.length;
-        score += Math.round((passed/total)*weights[cat]);
-      }
-
-      // Hard rules
-      if(!checks.technical[0].ok) maxScore = Math.min(maxScore,50);
-      if(!checks.content[0].ok) maxScore = Math.min(maxScore,55);
-      if(score>maxScore) score=maxScore;
-
-      // Verdict
-      let verdict="Low Risk";
-      if(score<60) verdict="High Approval Risk";
-      else if(score<80) verdict="Medium Risk";
-
-      // --- Output ---
-      out.innerHTML = "";
-      for(const cat in checks){
-        out.innerHTML += `<h3>${cat.toUpperCase()}</h3>`;
-        checks[cat].forEach(c=>{
-          out.innerHTML += `<div>${c.label}<span class="badge ${c.ok?"success":"error"}">${c.ok?"Pass":"Fail"}</span></div>`;
-        });
-        const catScore = Math.round((checks[cat].filter(c=>c.ok).length/checks[cat].length)*weights[cat]);
-        out.innerHTML += `<div class="progress"><div class="bar ${cat}" style="width:${catScore}%"></div></div>`;
-      }
-      out.innerHTML += `<div class="score">Final Score: ${score}/100</div>`;
-      out.innerHTML += `<div class="verdict">${verdict}</div>`;
-      out.innerHTML += `<button onclick="window.print()">Download Free Report (PDF)</button>`;
-      out.innerHTML += `<div class="affiliate"><strong>Recommended Tools:</strong><br>Improve speed with Hostinger<br>Use Cloudflare Free CDN<br>Install RankMath SEO Plugin</div>`;
+      } catch(e){ /* ignore errors */ }
     }
-  </script>
-</body>
-</html>
+  }
+  return results;
+}
+
+async function fetchHtml(url){
+  try {
+    const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(url);
+    const res = await fetch(endpoint);
+    if(!res.ok) return null;
+    return await res.text();
+  } catch(e) { return null; }
+}
+
+// -------- Main Checker --------
+async function runChecker(){
+  const htmlBox = document.getElementById("htmlInput");
+  const urlBox = document.getElementById("urlInput");
+  const out = document.getElementById("output");
+  out.innerHTML = "<p>Checking...</p>";
+
+  let html = htmlBox.value.trim();
+  const url = urlBox.value.trim();
+
+  if(!html && url){
+    html = await fetchHtml(url);
+    if(!html){
+      out.innerHTML = "<p style='color:red'>Could not fetch this URL.</p>";
+      return;
+    }
+  }
+  if(!html || !url){
+    out.innerHTML = "<p style='color:red'>Please paste HTML or enter a valid URL.</p>";
+    return;
+  }
+
+  const checks = { trust:[], content:[], seo:[], technical:[], performance:[] };
+
+  // --- Strict TRUST RESULTS ---
+  const baseUrl = url.replace(/\/$/, "");
+  let pageResults = await checkPolicyPages(baseUrl);
+  checks.trust.push({label:"Privacy Policy", ok: pageResults["Privacy Policy"]});
+  checks.trust.push({label:"About Page", ok: pageResults["About Page"]});
+  checks.trust.push({label:"Contact Page", ok: pageResults["Contact Page"]});
+  checks.trust.push({label:"Terms / Disclaimer", ok: pageResults["Terms / Disclaimer"]});
+
+  // --- CONTENT ---
+  const bodyText = html.replace(/<[^>]*>/g," ").trim();
+  const wordCount = bodyText.split(/\s+/).length;
+  checks.content.push({label:"Word Count ≥ 800", ok: wordCount>=800});
+  checks.content.push({label:"Has Headers", ok: html.includes("<h1")||html.includes("<h2")});
+
+  // --- SEO ---
+  checks.seo.push({label:"Title Tag", ok: html.includes("<title>")});
+  checks.seo.push({label:"Meta Description", ok: html.includes("name=\"description\"")});
+  checks.seo.push({label:"Canonical Tag", ok: html.includes("rel=\"canonical\"")});
+
+  // --- TECHNICAL ---
+  checks.technical.push({label:"HTTPS", ok: url.startsWith("https://")});
+  checks.technical.push({label:"robots.txt", ok: true});
+  checks.technical.push({label:"Viewport Meta", ok: html.includes("viewport")});
+  checks.technical.push({label:"ads.txt", ok: html.includes("google.com")});
+
+  // --- PERFORMANCE ---
+  checks.performance.push({label:"Basic Speed Check", ok: true});
+
+  // --- SCORING ---
+  let score = 0;
+  let maxScore = 100;
+  const weights = {trust:30, content:25, seo:15, technical:20, performance:10};
+
+  for(const cat in checks){
+    const passed = checks[cat].filter(c=>c.ok).length;
+    const total = checks[cat].length;
+    score += Math.round((passed/total)*weights[cat]);
+  }
+
+  if(!checks.trust[0].ok) maxScore = Math.min(maxScore,60);
+  if(!checks.technical[0].ok) maxScore = Math.min(maxScore,50);
+  if(!checks.content[0].ok) maxScore = Math.min(maxScore,55);
+  if(score>maxScore) score=maxScore;
+
+  let verdict="Low Risk";
+  if(score<60) verdict="High Approval Risk";
+  else if(score<80) verdict="Medium Risk";
+
+  // --- OUTPUT ---
+  out.innerHTML = "";
+  for(const cat in checks){
+    out.innerHTML += `<h3>${cat.toUpperCase()}</h3>`;
+    checks[cat].forEach(c=>{
+      out.innerHTML += `<div>${c.label}<span class="badge ${c.ok?"success":"error"}">${c.ok?"Pass":"Fail"}</span></div>`;
+    });
+    const catScore = Math.round((checks[cat].filter(c=>c.ok).length/checks[cat].length)*weights[cat]);
+    out.innerHTML += `<div class="progress"><div class="bar ${cat}" style="width:${catScore}%"></div></div>`;
+  }
+
+  out.inner
