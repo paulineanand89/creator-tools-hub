@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Free AdSense Technical Readiness & SEO Pre-Checker</title>
+  <title>AdSense Readiness Checker (Phase 1)</title>
   <style>
     body { font-family: Inter, Arial, sans-serif; background:#f5f7fa; margin:0; }
     header { background:#2d3748; color:#fff; padding:15px 30px; font-size:18px; font-weight:600; }
@@ -18,16 +18,10 @@
     .error { background:#fed7d7; color:#742a2a; }
     .score { margin-top:20px; font-size:18px; font-weight:600; color:#2d3748; }
     .verdict { font-size:16px; font-weight:600; margin-top:10px; }
-    .affiliate { margin-top:20px; padding:15px; background:#f7fafc; border:1px solid #e2e8f0; border-radius:6px; }
-    /* Category colors */
-    .content { background:#ed8936; }
-    .seo { background:#4299e1; }
-    .technical { background:#9f7aea; }
-    .performance { background:#f6e05e; }
   </style>
 </head>
 <body>
-  <header>Free AdSense Technical Readiness & SEO Pre-Checker</header>
+  <header>AdSense Readiness Checker</header>
   <div class="container">
     <h1>Technical Audit & Eligibility Indicators</h1>
     <p>Paste HTML or enter a URL below:</p>
@@ -37,102 +31,147 @@
     <div id="output"></div>
   </div>
 
-  <script>
-    async function fetchHtml(url){
+<script>
+// Proxy fetch
+async function fetchHtml(url){
+  try {
+    const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(url);
+    const res = await fetch(endpoint);
+    if(!res.ok) return null;
+    return await res.text();
+  } catch(e){ return null; }
+}
+
+// Strict trust page existence
+async function checkPolicyPages(baseUrl){
+  const paths = {
+    "Privacy Policy": ["/privacy-policy","/privacy"],
+    "About Page": ["/about","/about-us"],
+    "Contact Page": ["/contact","/contact-us"],
+    "Terms / Disclaimer": ["/terms","/disclaimer"]
+  };
+  const results = {};
+  for(const label in paths){
+    results[label] = false;
+    for(const path of paths[label]){
+      let fullUrl = baseUrl.replace(/\/$/, "") + path;
       try {
-        const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(url);
+        const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(fullUrl);
         const res = await fetch(endpoint);
-        if(!res.ok) return null;
-        return await res.text();
-      } catch(e) { return null; }
-    }
-
-    async function runChecker(){
-      const htmlBox = document.getElementById("htmlInput");
-      const urlBox = document.getElementById("urlInput");
-      const out = document.getElementById("output");
-      out.innerHTML = "<p>Checking...</p>";
-
-      let html = htmlBox.value.trim();
-      const url = urlBox.value.trim();
-
-      if(!html && url){
-        html = await fetchHtml(url);
-        if(!html){
-          out.innerHTML = "<p style='color:red'>Could not fetch this URL.</p>";
-          return;
+        if(res.ok){
+          const html = await res.text();
+          const lower = html.toLowerCase();
+          if(lower.includes("privacy") || lower.includes("about") || lower.includes("contact") || lower.includes("terms") || lower.includes("disclaimer")){
+            results[label] = true;
+            break;
+          }
         }
-      }
-      if(!html || !url){
-        out.innerHTML = "<p style='color:red'>Please paste HTML or enter a valid URL.</p>";
-        return;
-      }
-
-      // --- Checks ---
-      const checks = {
-        content: [],
-        seo: [],
-        technical: [],
-        performance: []
-      };
-
-      // Content quality
-      const bodyText = html.replace(/<[^>]*>/g," ").trim();
-      const wordCount = bodyText.split(/\s+/).length;
-      checks.content.push({label:"Word Count ≥ 800", ok: wordCount>=800});
-      checks.content.push({label:"Has Headers", ok: html.includes("<h1")||html.includes("<h2")});
-
-      // SEO basics
-      checks.seo.push({label:"Title Tag", ok: html.includes("<title>")});
-      checks.seo.push({label:"Meta Description", ok: html.includes("name=\"description\"")});
-      checks.seo.push({label:"Canonical Tag", ok: html.includes("rel=\"canonical\"")});
-
-      // Technical
-      checks.technical.push({label:"HTTPS", ok: url.startsWith("https://")});
-      checks.technical.push({label:"robots.txt", ok: true}); // simplified
-      checks.technical.push({label:"Viewport Meta", ok: html.includes("viewport")});
-      checks.technical.push({label:"ads.txt", ok: html.includes("google.com")});
-
-      // Performance (placeholder)
-      checks.performance.push({label:"Basic Speed Check", ok: true});
-
-      // --- Scoring ---
-      let score = 0;
-      let maxScore = 100;
-      const weights = {content:25, seo:25, technical:25, performance:25};
-
-      for(const cat in checks){
-        const catChecks = checks[cat];
-        const passed = catChecks.filter(c=>c.ok).length;
-        const total = catChecks.length;
-        score += Math.round((passed/total)*weights[cat]);
-      }
-
-      // Hard rules
-      if(!checks.technical[0].ok) maxScore = Math.min(maxScore,50);
-      if(!checks.content[0].ok) maxScore = Math.min(maxScore,55);
-      if(score>maxScore) score=maxScore;
-
-      // Verdict
-      let verdict="Low Risk";
-      if(score<60) verdict="High Approval Risk";
-      else if(score<80) verdict="Medium Risk";
-
-      // --- Output ---
-      out.innerHTML = "";
-      for(const cat in checks){
-        out.innerHTML += `<h3>${cat.toUpperCase()}</h3>`;
-        checks[cat].forEach(c=>{
-          out.innerHTML += `<div>${c.label}<span class="badge ${c.ok?"success":"error"}">${c.ok?"Pass":"Fail"}</span></div>`;
-        });
-        const catScore = Math.round((checks[cat].filter(c=>c.ok).length/checks[cat].length)*weights[cat]);
-        out.innerHTML += `<div class="progress"><div class="bar ${cat}" style="width:${catScore}%"></div></div>`;
-      }
-      out.innerHTML += `<div class="score">Final Score: ${score}/100</div>`;
-      out.innerHTML += `<div class="verdict">${verdict}</div>`;
-      out.innerHTML += `<button onclick="window.print()">Download Free Report (PDF)</button>`;
-      out.innerHTML += `<div class="affiliate"><strong>Recommended Tools:</strong><br>Improve speed with Hostinger<br>Use Cloudflare Free CDN<br>Install RankMath SEO Plugin</div>`;
+      } catch(e){ /* ignore */ }
     }
-  </script>
-</body>
-</html>
+  }
+  return results;
+}
+
+// robots.txt and sitemap.xml checks
+async function checkRobotsAndSitemap(baseUrl){
+  const results = { robots:false, sitemap:false };
+  try {
+    const robotsUrl = baseUrl.replace(/\/$/,"") + "/robots.txt";
+    const robotsRes = await fetch("https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(robotsUrl));
+    if(robotsRes.ok){ results.robots = true; }
+  } catch(e){}
+
+  try {
+    const sitemapUrl = baseUrl.replace(/\/$/,"") + "/sitemap.xml";
+    const sitemapRes = await fetch("https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(sitemapUrl));
+    if(sitemapRes.ok){
+      const xml = await sitemapRes.text();
+      if(xml.includes("<url>")) results.sitemap = true;
+    }
+  } catch(e){}
+  return results;
+}
+
+// Main checker
+async function runChecker(){
+  const htmlBox = document.getElementById("htmlInput");
+  const urlBox = document.getElementById("urlInput");
+  const out = document.getElementById("output");
+  out.innerHTML = "<p>Checking...</p>";
+
+  let html = htmlBox.value.trim();
+  const url = urlBox.value.trim();
+
+  if(!html && url){
+    html = await fetchHtml(url);
+    if(!html){
+      out.innerHTML = "<p style='color:red'>Could not fetch this URL.</p>";
+      return;
+    }
+  }
+  if(!html || !url){
+    out.innerHTML = "<p style='color:red'>Please paste HTML or enter a valid URL.</p>";
+    return;
+  }
+
+  const checks = { trust:[], content:[], seo:[], technical:[], performance:[] };
+
+  // Trust pages
+  const policyResults = await checkPolicyPages(url);
+  checks.trust.push({label:"Privacy Policy", ok: policyResults["Privacy Policy"]});
+  checks.trust.push({label:"About Page", ok: policyResults["About Page"]});
+  checks.trust.push({label:"Contact Page", ok: policyResults["Contact Page"]});
+  checks.trust.push({label:"Terms / Disclaimer", ok: policyResults["Terms / Disclaimer"]});
+
+  // robots.txt & sitemap
+  const crawlResults = await checkRobotsAndSitemap(url);
+  checks.technical.push({label:"robots.txt", ok: crawlResults.robots});
+  checks.technical.push({label:"sitemap.xml", ok: crawlResults.sitemap});
+
+  // Content
+  const bodyText = html.replace(/<[^>]*>/g," ").trim();
+  const wordCount = bodyText.split(/\s+/).length;
+  checks.content.push({label:"Word Count ≥ 800", ok: wordCount>=800});
+  checks.content.push({label:"Has Headers", ok: html.includes("<h1")||html.includes("<h2")});
+
+  // SEO
+  checks.seo.push({label:"Title Tag", ok: html.includes("<title>")});
+  checks.seo.push({label:"Meta Description", ok: html.includes("name=\"description\"")});
+  checks.seo.push({label:"Canonical Tag", ok: html.includes("rel=\"canonical\"")});
+
+  // Technical (other)
+  checks.technical.push({label:"HTTPS", ok: url.startsWith("https://")});
+  checks.technical.push({label:"Viewport Meta", ok: html.includes("viewport")});
+  checks.technical.push({label:"ads.txt", ok: html.includes("google.com")});
+
+  // Performance placeholder
+  checks.performance.push({label:"Basic Speed Check", ok: true});
+
+  // Scoring
+  let score = 0;
+  let maxScore = 100;
+  const weights = {trust:25, content:20, seo:20, technical:25, performance:10};
+
+  for(const cat in checks){
+    const passed = checks[cat].filter(c=>c.ok).length;
+    const total = checks[cat].length;
+    score += Math.round((passed/total)*weights[cat]);
+  }
+
+  if(!checks.trust[0].ok) maxScore = Math.min(maxScore,60);
+  if(!checks.technical.find(c=>c.label==="HTTPS").ok) maxScore = Math.min(maxScore,50);
+  if(!checks.content[0].ok) maxScore = Math.min(maxScore,55);
+  if(score>maxScore) score=maxScore;
+
+  let verdict="Low Risk";
+  if(score<60) verdict="High Approval Risk";
+  else if(score<80) verdict="Medium Risk";
+
+  // Output
+  out.innerHTML = "";
+  for(const cat in checks){
+    out.innerHTML += `<h3>${cat.toUpperCase()}</h3>`;
+    checks[cat].forEach(c=>{
+      out.innerHTML += `<div>${c.label}<span class="badge ${c.ok?"success":"error"}">${c.ok?"Pass":"Fail"}</span></div>`;
+    });
+    const catScore = Math.round((checks
