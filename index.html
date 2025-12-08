@@ -19,7 +19,7 @@
     .score { margin-top:20px; font-size:18px; font-weight:600; color:#2d3748; }
     .verdict { font-size:16px; font-weight:600; margin-top:10px; }
     .affiliate { margin-top:20px; padding:15px; background:#f7fafc; border:1px solid #e2e8f0; border-radius:6px; }
-    .trust { background:#48bb78; }
+    /* Category colors */
     .content { background:#ed8936; }
     .seo { background:#4299e1; }
     .technical { background:#9f7aea; }
@@ -47,35 +47,6 @@
       } catch(e) { return null; }
     }
 
-    // Crawl common policy pages
-    async function checkPolicyPages(baseUrl){
-      const paths = {
-        "Privacy Policy": ["/privacy-policy","/privacy"],
-        "About Page": ["/about"],
-        "Contact Page": ["/contact"],
-        "Terms / Disclaimer": ["/terms","/disclaimer"]
-      };
-      const results = {};
-      for(const label in paths){
-        results[label] = false;
-        for(const path of paths[label]){
-          try {
-            const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(baseUrl + path);
-            const res = await fetch(endpoint);
-            if(res.ok){
-              const html = await res.text();
-              const lower = html.toLowerCase();
-              if(lower.includes("privacy") || lower.includes("about") || lower.includes("contact") || lower.includes("terms") || lower.includes("disclaimer")){
-                results[label] = true;
-                break;
-              }
-            }
-          } catch(e){ /* ignore errors */ }
-        }
-      }
-      return results;
-    }
-
     async function runChecker(){
       const htmlBox = document.getElementById("htmlInput");
       const urlBox = document.getElementById("urlInput");
@@ -97,20 +68,17 @@
         return;
       }
 
-      const lowerHtml = html.toLowerCase();
-      const bodyText = html.replace(/<[^>]*>/g," ").trim();
-      const wordCount = bodyText.split(/\s+/).length;
-
-      const checks = { trust: [], content: [], seo: [], technical: [], performance: [] };
-
-      // Policy pages via crawling
-      const policyResults = await checkPolicyPages(url);
-      checks.trust.push({label:"Privacy Policy", ok: policyResults["Privacy Policy"]});
-      checks.trust.push({label:"About Page", ok: policyResults["About Page"]});
-      checks.trust.push({label:"Contact Page", ok: policyResults["Contact Page"]});
-      checks.trust.push({label:"Terms / Disclaimer", ok: policyResults["Terms / Disclaimer"]});
+      // --- Checks ---
+      const checks = {
+        content: [],
+        seo: [],
+        technical: [],
+        performance: []
+      };
 
       // Content quality
+      const bodyText = html.replace(/<[^>]*>/g," ").trim();
+      const wordCount = bodyText.split(/\s+/).length;
       checks.content.push({label:"Word Count ≥ 800", ok: wordCount>=800});
       checks.content.push({label:"Has Headers", ok: html.includes("<h1")||html.includes("<h2")});
 
@@ -121,7 +89,7 @@
 
       // Technical
       checks.technical.push({label:"HTTPS", ok: url.startsWith("https://")});
-      checks.technical.push({label:"robots.txt", ok: true});
+      checks.technical.push({label:"robots.txt", ok: true}); // simplified
       checks.technical.push({label:"Viewport Meta", ok: html.includes("viewport")});
       checks.technical.push({label:"ads.txt", ok: html.includes("google.com")});
 
@@ -131,7 +99,7 @@
       // --- Scoring ---
       let score = 0;
       let maxScore = 100;
-      const weights = {trust:30, content:25, seo:15, technical:20, performance:10};
+      const weights = {content:25, seo:25, technical:25, performance:25};
 
       for(const cat in checks){
         const catChecks = checks[cat];
@@ -140,11 +108,12 @@
         score += Math.round((passed/total)*weights[cat]);
       }
 
-      if(!checks.trust[0].ok) maxScore = Math.min(maxScore,60);
+      // Hard rules
       if(!checks.technical[0].ok) maxScore = Math.min(maxScore,50);
       if(!checks.content[0].ok) maxScore = Math.min(maxScore,55);
       if(score>maxScore) score=maxScore;
 
+      // Verdict
       let verdict="Low Risk";
       if(score<60) verdict="High Approval Risk";
       else if(score<80) verdict="Medium Risk";
@@ -162,4 +131,8 @@
       out.innerHTML += `<div class="score">Final Score: ${score}/100</div>`;
       out.innerHTML += `<div class="verdict">${verdict}</div>`;
       out.innerHTML += `<button onclick="window.print()">Download Free Report (PDF)</button>`;
-      out.innerHTML += `<div class="affiliate"><strong>Recommended Tools:</
+      out.innerHTML += `<div class="affiliate"><strong>Recommended Tools:</strong><br>Improve speed with Hostinger<br>Use Cloudflare Free CDN<br>Install RankMath SEO Plugin</div>`;
+    }
+  </script>
+</body>
+</html>
