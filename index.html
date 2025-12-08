@@ -46,6 +46,35 @@
       } catch(e) { return null; }
     }
 
+    // Extended proxy logic: crawl common policy pages
+    async function checkPolicyPages(baseUrl){
+      const paths = {
+        "Privacy Policy": ["/privacy-policy","/privacy"],
+        "About page": ["/about"],
+        "Contact page": ["/contact"],
+        "Terms & Disclaimer": ["/terms","/disclaimer"]
+      };
+      const results = {};
+      for(const label in paths){
+        results[label] = false;
+        for(const path of paths[label]){
+          try {
+            const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(baseUrl + path);
+            const res = await fetch(endpoint);
+            if(res.ok){
+              const html = await res.text();
+              const lower = html.toLowerCase();
+              if(lower.includes("privacy") || lower.includes("about") || lower.includes("contact") || lower.includes("terms") || lower.includes("disclaimer")){
+                results[label] = true;
+                break; // stop once found
+              }
+            }
+          } catch(e){ /* ignore */ }
+        }
+      }
+      return results;
+    }
+
     async function runChecker(){
       const htmlBox = document.getElementById("htmlInput");
       const urlBox = document.getElementById("urlInput");
@@ -86,10 +115,13 @@
         "Content depth": wordCount>=800
       };
 
+      // Crawl policy pages
+      const policyResults = await checkPolicyPages(url);
       const policy = {
-        "Privacy Policy": lowerHtml.includes("privacy policy"),
-        "About page": lowerHtml.includes("about"),
-        "Contact page": lowerHtml.includes("contact"),
+        "Privacy Policy": policyResults["Privacy Policy"],
+        "About page": policyResults["About page"],
+        "Contact page": policyResults["Contact page"],
+        "Terms & Disclaimer": policyResults["Terms & Disclaimer"],
         "Indexed on Google": true // placeholder
       };
 
@@ -104,10 +136,11 @@
         return Math.round((passed/total)*weight);
       }
 
-      score += calcScore(technical, weights.technical);
-      score += calcScore(seo, weights.seo);
-      score += calcScore(policy, weights.policy);
-      score += 25; // performance placeholder
+      const techScore = calcScore(technical, weights.technical);
+      const seoScore = calcScore(seo, weights.seo);
+      const policyScore = calcScore(policy, weights.policy);
+
+      score += techScore + seoScore + policyScore + 25; // performance placeholder
 
       // Hard rules
       if(!policy["Privacy Policy"]) maxScore = Math.min(maxScore,60);
@@ -123,8 +156,8 @@
       // --- Output ---
       out.innerHTML = "";
 
-      function renderSection(title, group){
-        out.innerHTML += `<div class="section"><h3>▸ ${title}</h3>`;
+      function renderSection(title, group, percent){
+        out.innerHTML += `<div class="section"><h3>▸ ${title} (${percent}%)</h3>`;
         for(const key in group){
           const ok = group[key];
           out.innerHTML += `<div class="item">${key}<span class="badge ${ok?"success":"error"}">${ok?"Pass":"Fail"}</span></div>`;
@@ -132,9 +165,9 @@
         out.innerHTML += `</div>`;
       }
 
-      renderSection("Technical Check", technical);
-      renderSection("SEO Check", seo);
-      renderSection("Policy Compliance", policy);
+      renderSection("Technical Check", technical, techScore);
+      renderSection("SEO Check", seo, seoScore);
+      renderSection("Policy Compliance", policy, policyScore);
 
       out.innerHTML += `<div class="score">▸ Final Score: ${score}/100</div>`;
       out.innerHTML += `<div class="verdict ${verdictClass}">Verdict badge: ${verdictText}</div>`;
@@ -146,10 +179,4 @@
           <p><strong>Disclaimer:</strong> This pre-check estimates AdSense eligibility based on technical and content factors. It does not guarantee approval, as final decisions depend on Google’s policies.</p>
           <p><strong>Website:</strong> www.yoursaaschecker.com<br>
              <strong>Email:</strong> support@yoursaaschecker.com<br>
-             <strong>Generated on:</strong> ${today}<br>
-             <strong>Version:</strong> v1.0</p>
-        </div>`;
-    }
-  </script>
-</body>
-</html>
+             <strong>
