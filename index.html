@@ -23,7 +23,7 @@
     // --- Only Vercel proxy ---
     async function fetchHtml(url){
       try {
-        const endpoint = "https://ad-sense-proxy-lr1n-ap79pubcj-paulines-projects-d0068dd5.vercel.app/api/proxy?url=" + encodeURIComponent(url);
+        const endpoint = "https://vercel-r7zb2lkmp-paulines-projects-d0068dd5.vercel.app//api/proxy?url=" + encodeURIComponent(url);
         const res = await fetch(endpoint);
         if(!res.ok) return null;
         return await res.text();
@@ -168,3 +168,4 @@
   </script>
 </body>
 </html>
+
