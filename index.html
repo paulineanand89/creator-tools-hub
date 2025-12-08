@@ -20,13 +20,19 @@
   <div id="output"></div>
 
   <script>
+    // --- Updated fetchHtml with fallback (Vercel first, then Netlify) ---
     async function fetchHtml(url){
-      try {
-        const endpoint = "https://creator-tools-hub.netlify.app/.netlify/functions/fetch-proxy?url=" + encodeURIComponent(url);
-        const res = await fetch(endpoint);
-        if(!res.ok) return null;
-        return await res.text();
-      } catch(e) { return null; }
+      const endpoints = [
+        "https://ad-sense-proxy-lr1n-ap79pubcj-paulines-projects-d0068dd5.vercel.app/api/proxy?url=",
+        "https://creator-tools-hub.netlify.app/.netlify/functions/fetch-proxy?url="
+      ];
+      for(const base of endpoints){
+        try {
+          const res = await fetch(base + encodeURIComponent(url));
+          if(res.ok) return await res.text();
+        } catch(e){ continue; }
+      }
+      return null;
     }
 
     async function fetchPerformance(url){
@@ -86,7 +92,7 @@
       if(titleMatch){ output.push("✅ Title tag: Found → " + titleMatch[1]); bonus += 5; }
       else { output.push("❌ Title tag: Missing"); }
 
-      // --- Policy page detection (broader keywords) ---
+      // --- Policy page detection ---
       const lowerHtml = html.toLowerCase();
       const policyKeywords = [
         "privacy policy","privacy notice","privacy & policy",
@@ -107,7 +113,7 @@
       if(wordCount >= 300){ output.push("✅ Content length: "+wordCount+" words (sufficient)"); bonus += 10; }
       else { output.push("❌ Content length: "+wordCount+" words (too short)"); }
 
-      // --- Prohibited content scan (basic) ---
+      // --- Prohibited content scan ---
       const blacklist = [
         "porn","sex","xxx","escort","adult",
         "gambling","casino","betting",
