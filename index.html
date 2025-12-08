@@ -1,739 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Creator Tools Hub — AdSense, SEO, Headlines, Ideas, PageSpeed, Schema</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="All-in-one page with AdSense Readiness Checker, SEO Keyword Analyzer, Headline Tester, Idea Validation Tool, PageSpeed API integration, and Schema Validation.">
+  <meta charset="UTF-8">
+  <title>AdSense Readiness Checker</title>
   <style>
-    :root{
-      --bg:#0e1116;
-      --card:#151a22;
-      --accent:#4f8df7;
-      --accent-2:#27c3a8;
-      --text:#eaf0ff;
-      --muted:#9fb0cc;
-      --danger:#ff6b6b;
-      --warn:#ffc861;
-      --ok:#46d38f;
-      --border:#233041;
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 0 20px;
     }
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,sans-serif}
-    a{color:var(--accent)}
-    .wrap{max-width:980px;margin:0 auto;padding:20px}
-    header{
-      display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;
+    h1 {
+      color: #333;
     }
-    .brand{
-      display:flex;align-items:center;gap:12px;
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 14px;
     }
-    .logo{
-      width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
-      box-shadow:0 10px 30px rgba(79,141,247,.25);
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      cursor: pointer;
     }
-    h1{font-size:22px;margin:0}
-    .subtitle{color:var(--muted);font-size:14px}
-    .nav{
-      display:flex;flex-wrap:wrap;gap:8px;
+    #output {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border: 1px solid #ccc;
+      white-space: pre-wrap;
     }
-    .chip{
-      padding:8px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card);
-      color:var(--text);font-size:14px;cursor:pointer;transition:.2s;
-    }
-    .chip:hover{border-color:var(--accent)}
-    .grid{
-      display:grid;grid-template-columns:1fr;gap:14px;
-    }
-    @media(min-width:900px){
-      .grid{grid-template-columns:1fr 1fr}
-    }
-    .card{
-      background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;
-      box-shadow:0 10px 20px rgba(0,0,0,.25);
-    }
-    .card h2{font-size:18px;margin:0 0 6px 0}
-    .card .desc{color:var(--muted);font-size:13px;margin-bottom:12px}
-    .section{
-      margin-top:8px;border-top:1px dashed var(--border);
-    }
-    .section .toggle{
-      display:flex;align-items:center;justify-content:space-between;padding:10px 0;cursor:pointer;
-    }
-    .section .toggle h3{font-size:16px;margin:0}
-    .section .content{display:none;padding:10px 0 0 0}
-    .section.open .content{display:block}
-    .fld{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
-    .fld label{font-size:13px;color:var(--muted)}
-    input[type="text"],input[type="url"],input[type="number"],textarea,select{
-      width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#0c1118;color:var(--text);font-size:14px;
-    }
-    textarea{min-height:100px;resize:vertical}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .row > *{flex:1}
-    .btn{
-      background:var(--accent);color:white;border:none;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer;
-      box-shadow:0 8px 20px rgba(79,141,247,.35);transition:.2s;
-    }
-    .btn.secondary{background:#1e2835;color:var(--text);border:1px solid var(--border);box-shadow:none}
-    .btn:hover{filter:brightness(1.08)}
-    .note{font-size:12px;color:var(--muted)}
-    .badge{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid var(--border);background:#0c1118;color:var(--muted)}
-    .score{
-      display:flex;align-items:center;gap:8px;margin:8px 0 4px 0;
-    }
-    .score .dot{width:10px;height:10px;border-radius:999px}
-    .score.good .dot{background:var(--ok)}
-    .score.warn .dot{background:var(--warn)}
-    .score.bad .dot{background:var(--danger)}
-    .list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
-    .list .item{display:flex;gap:8px;align-items:flex-start}
-    .item .label{min-width:110px;color:var(--muted);font-size:13px}
-    .item .val{flex:1}
-    .code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;background:#0b0f14;padding:8px 10px;border-radius:10px;border:1px solid var(--border);color:#b9d2ff;font-size:12px;overflow:auto}
-    .footer{
-      margin-top:20px;color:var(--muted);font-size:12px;text-align:center
-    }
-    .pill{
-      display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#0c1118;color:var(--muted);font-size:12px
-    }
-    .kpi{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .kpi .stat{background:#0c1118;border:1px solid var(--border);border-radius:12px;padding:10px 12px;min-width:140px}
-    .stat .label{color:var(--muted);font-size:12px}
-    .stat .val{font-size:16px;font-weight:700}
-    .help{color:#c2d7ff;font-size:12px}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <h1>Creator Tools Hub</h1>
-          <div class="subtitle">AdSense Readiness • SEO Keyword Analyzer • Headline Tester • Idea Validator • PageSpeed • Schema</div>
-        </div>
-      </div>
-      <nav class="nav" aria-label="Quick navigation">
-        <button class="chip" data-jump="adsense">AdSense</button>
-        <button class="chip" data-jump="seo">SEO</button>
-        <button class="chip" data-jump="headline">Headline</button>
-        <button class="chip" data-jump="ideas">Ideas</button>
-        <button class="chip" data-jump="pagespeed">PageSpeed</button>
-        <button class="chip" data-jump="schema">Schema</button>
-      </nav>
-    </header>
+  <h1>AdSense Readiness Checker</h1>
+  <p>Paste your page HTML or enter a URL below:</p>
+  <textarea id="htmlInput" rows="10" placeholder="Paste full HTML here..."></textarea>
+  <input type="text" id="urlInput" placeholder="Or enter a full URL (https://...)">
+  <button onclick="runChecker()">Check Readiness</button>
 
-    <div class="grid">
-      <!-- AdSense Readiness Checker -->
-      <section id="adsense" class="card">
-        <h2>AdSense Readiness Checker</h2>
-        <p class="desc">Heuristic audit for policy basics, content quality, and technical signals. Paste a public URL or analyze pasted HTML.</p>
-
-        <div class="section open">
-          <div class="toggle">
-            <h3>Input</h3>
-            <span class="badge">Policy & quality heuristics</span>
-          </div>
-          <div class="content">
-            <div class="fld">
-              <label for="adsenseUrl">Site URL</label>
-              <input type="url" id="adsenseUrl" placeholder="https://example.com">
-            </div>
-            <div class="fld">
-              <label for="adsenseHtml">Optional: Paste page HTML for deeper scan</label>
-              <textarea id="adsenseHtml" placeholder="Paste raw HTML here (if URL is gated or dynamic)"></textarea>
-            </div>
-            <div class="row">
-              <button class="btn" id="adsenseRun">Run readiness check</button>
-              <button class="btn secondary" id="adsenseClear">Clear</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="toggle">
-            <h3>Results</h3>
-            <span class="pill"><span>Score model</span> <span class="badge">0–100</span></span>
-          </div>
-          <div class="content" id="adsenseOut">
-            <div class="score" id="adsenseScore">
-              <div class="dot"></div>
-              <strong>Overall:</strong> <span class="val">—</span>
-            </div>
-            <div class="kpi">
-              <div class="stat"><div class="label">Content length</div><div class="val" id="adsenseWords">—</div></div>
-              <div class="stat"><div class="label">Outbound links</div><div class="val" id="adsenseLinks">—</div></div>
-              <div class="stat"><div class="label">Core pages</div><div class="val" id="adsenseCore">—</div></div>
-              <div class="stat"><div class="label">Policy flags</div><div class="val" id="adsenseFlags">—</div></div>
-            </div>
-            <div class="list" id="adsenseTips"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- SEO Keyword Analyzer -->
-      <section id="seo" class="card">
-        <h2>SEO Keyword Analyzer</h2>
-        <p class="desc">Measure keyword presence, density, and on‑page signals. Paste content or fetch by URL.</p>
-
-        <div class="section open">
-          <div class="toggle">
-            <h3>Input</h3>
-            <span class="badge">Keywords & content</span>
-          </div>
-          <div class="content">
-            <div class="fld">
-              <label for="seoKeywords">Target keywords (comma separated)</label>
-              <input type="text" id="seoKeywords" placeholder="adsense readiness, seo audit, page speed">
-            </div>
-            <div class="fld">
-              <label for="seoUrl">Optional URL to fetch content</label>
-              <input type="url" id="seoUrl" placeholder="https://example.com">
-            </div>
-            <div class="fld">
-              <label for="seoContent">Content (fallback or override)</label>
-              <textarea id="seoContent" placeholder="Paste your article or HTML"></textarea>
-            </div>
-            <div class="row">
-              <button class="btn" id="seoRun">Analyze keywords</button>
-              <button class="btn secondary" id="seoClear">Clear</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="toggle">
-            <h3>Results</h3>
-            <span class="pill">Density • Titles • Meta • Headings</span>
-          </div>
-          <div class="content" id="seoOut"></div>
-        </div>
-      </section>
-
-      <!-- Headline Tester -->
-      <section id="headline" class="card">
-        <h2>Headline Tester</h2>
-        <p class="desc">Score headlines for clarity, length, power words, specificity, and emotional pull.</p>
-
-        <div class="section open">
-          <div class="toggle">
-            <h3>Input</h3>
-            <span class="badge">Single or multiple headlines</span>
-          </div>
-          <div class="content">
-            <div class="fld">
-              <label for="headlineList">Headlines (one per line)</label>
-              <textarea id="headlineList" placeholder="E.g., 12 Proven Ways to Pass AdSense Review in 7 Days"></textarea>
-            </div>
-            <div class="row">
-              <button class="btn" id="headlineRun">Score headlines</button>
-              <button class="btn secondary" id="headlineClear">Clear</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="toggle">
-            <h3>Results</h3>
-            <span class="pill">Score • Feedback</span>
-          </div>
-          <div class="content" id="headlineOut"></div>
-        </div>
-      </section>
-
-      <!-- Idea Validation Tool -->
-      <section id="ideas" class="card">
-        <h2>Idea Validation Tool</h2>
-        <p class="desc">Lightweight scoring using audience intent, monetizability, competition, seasonality, and execution ease.</p>
-
-        <div class="section open">
-          <div class="toggle">
-            <h3>Input</h3>
-            <span class="badge">Qualitative sliders</span>
-          </div>
-          <div class="content">
-            <div class="fld">
-              <label for="ideaName">Idea name</label>
-              <input type="text" id="ideaName" placeholder="AdSense Auditor for Bloggers">
-            </div>
-            <div class="row">
-              <div class="fld">
-                <label>Audience intent (searcher urgency) 0–10</label>
-                <input type="number" id="ideaIntent" min="0" max="10" value="7">
-              </div>
-              <div class="fld">
-                <label>Monetizability (ads/affiliates) 0–10</label>
-                <input type="number" id="ideaMonetize" min="0" max="10" value="8">
-              </div>
-              <div class="fld">
-                <label>Competition (lower is better) 0–10</label>
-                <input type="number" id="ideaComp" min="0" max="10" value="4">
-              </div>
-              <div class="fld">
-                <label>Seasonality (lower is steadier) 0–10</label>
-                <input type="number" id="ideaSeason" min="0" max="10" value="3">
-              </div>
-              <div class="fld">
-                <label>Execution ease (build & maintain) 0–10</label>
-                <input type="number" id="ideaEase" min="0" max="10" value="8">
-              </div>
-            </div>
-            <div class="row">
-              <button class="btn" id="ideaRun">Score idea</button>
-              <button class="btn secondary" id="ideaClear">Clear</button>
-            </div>
-            <p class="note">Tip: Use search data to calibrate these inputs. You can later wire Google Trends to auto-suggest scores.</p>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="toggle">
-            <h3>Results</h3>
-            <span class="pill">Weighted score • Guidance</span>
-          </div>
-          <div class="content" id="ideaOut"></div>
-        </div>
-      </section>
-
-      <!-- PageSpeed API Integration -->
-      <section id="pagespeed" class="card">
-        <h2>PageSpeed Insights</h2>
-        <p class="desc">Fetch performance metrics via Google’s API. Requires an API key.</p>
-
-        <div class="section open">
-          <div class="toggle">
-            <h3>Input</h3>
-            <span class="badge">API call</span>
-          </div>
-          <div class="content">
-            <div class="fld">
-              <label for="psiUrl">URL</label>
-              <input type="url" id="psiUrl" placeholder="https://example.com">
-            </div>
-            <div class="row">
-              <div class="fld">
-                <label for="psiKey">API key</label>
-                <input type="text" id="psiKey" placeholder="Your Google API key">
-              </div>
-              <div class="fld">
-                <label for="psiStrategy">Strategy</label>
-                <select id="psiStrategy">
-                  <option value="mobile">mobile</option>
-                  <option value="desktop">desktop</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <button class="btn" id="psiRun">Run PageSpeed</button>
-              <button class="btn secondary" id="psiClear">Clear</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="toggle">
-            <h3>Results</h3>
-            <span class="pill">Score • Core Web Vitals</span>
-          </div>
-          <div class="content" id="psiOut"></div>
-        </div>
-      </section>
-
-      <!-- Schema Validation Tool -->
-      <section id="schema" class="card">
-        <h2>Schema Validation</h2>
-        <p class="desc">Extract and validate JSON‑LD presence, basic structure, and recommended fields.</p>
-
-        <div class="section open">
-          <div class="toggle">
-            <h3>Input</h3>
-            <span class="badge">URL or HTML</span>
-          </div>
-          <div class="content">
-            <div class="fld">
-              <label for="schemaUrl">Site URL</label>
-              <input type="url" id="schemaUrl" placeholder="https://example.com/post">
-            </div>
-            <div class="fld">
-              <label for="schemaHtml">Optional: Paste HTML containing JSON‑LD</label>
-              <textarea id="schemaHtml" placeholder='{"@context":"https://schema.org","@type":"Article", ...}'></textarea>
-            </div>
-            <div class="row">
-              <button class="btn" id="schemaRun">Validate schema</button>
-              <button class="btn secondary" id="schemaClear">Clear</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="toggle">
-            <h3>Results</h3>
-            <span class="pill">Types • Required fields • Tips</span>
-          </div>
-          <div class="content" id="schemaOut"></div>
-        </div>
-      </section>
-    </div>
-
-    <div class="footer">
-      Built for fast, practical validation. No dependencies. Paste this whole page into Blogger or load JS from GitHub Pages.
-    </div>
-  </div>
+  <div id="output"></div>
 
   <script>
-    // Utilities
-    const $ = sel => document.querySelector(sel);
-    const $all = sel => Array.from(document.querySelectorAll(sel));
-    const textOnly = html => {
-      const tmp = document.createElement('div'); tmp.innerHTML = html || '';
-      return tmp.textContent || '';
-    };
-    const countWords = str => (str.trim().match(/\b\w+\b/g) || []).length;
-    const countOutboundLinks = html => {
-      const tmp = document.createElement('div'); tmp.innerHTML = html || '';
-      const links = Array.from(tmp.querySelectorAll('a[href]')).filter(a=>{
-        const href = a.getAttribute('href')||'';
-        return /^https?:\/\//i.test(href) && !href.includes(location.hostname);
-      });
-      return links.length;
-    };
-    const fetchHtml = async (url) => {
-      try{
-        const res = await fetch(url, {mode:'cors'});
-        const txt = await res.text();
-        return txt;
-      }catch(e){
+    async function fetchHtml(url){
+      try {
+        const endpoint = "https://creator-tools-hub.netlify.app/.netlify/functions/fetch-proxy?url=" + encodeURIComponent(url);
+        const res = await fetch(endpoint);
+        if(!res.ok) return null;
+        return await res.text();
+      } catch(e) {
         return null;
       }
-    };
-    const setScore = (el, val) => {
-      const cls = val>=80 ? 'good' : val>=50 ? 'warn' : 'bad';
-      el.className = 'score ' + cls;
-      el.querySelector('.val').textContent = val.toFixed(0) + '/100';
-    };
-    const toItem = (label, val) => {
-      const div = document.createElement('div');
-      div.className = 'item';
-      div.innerHTML = `<div class="label">${label}</div><div class="val">${val}</div>`;
-      return div;
-    };
+    }
 
-    // Collapsible sections toggle
-    $all('.section .toggle').forEach(tog=>{
-      tog.addEventListener('click', ()=>{
-        const parent = tog.parentElement;
-        parent.classList.toggle('open');
-      });
-    });
+    function checkAdSenseReadiness(html){
+      const output = [];
+      const hasAdsTxt = html.includes("ads.txt");
+      const hasMetaAds = html.includes("name=\"google-adsense\"");
+      const hasScriptAds = html.includes("adsbygoogle.js");
+      const hasAdUnits = html.includes("adsbygoogle");
 
-    // Jump nav
-    $all('.chip').forEach(ch=>{
-      ch.addEventListener('click', ()=>{
-        const id = ch.dataset.jump;
-        const el = document.getElementById(id);
-        if(el){ window.scrollTo({top: el.offsetTop - 8, behavior:'smooth'}); }
-      });
-    });
+      output.push("✅ ads.txt reference: " + (hasAdsTxt ? "Found" : "Missing"));
+      output.push("✅ Meta tag for AdSense: " + (hasMetaAds ? "Found" : "Missing"));
+      output.push("✅ AdSense script: " + (hasScriptAds ? "Found" : "Missing"));
+      output.push("✅ Ad unit tags: " + (hasAdUnits ? "Found" : "Missing"));
 
-    // 1) AdSense Readiness
-    $('#adsenseRun').addEventListener('click', async ()=>{
-      const url = $('#adsenseUrl').value.trim();
-      let html = $('#adsenseHtml').value.trim();
-      if(!html && url){ html = await fetchHtml(url) || ''; }
-      const txt = textOnly(html);
-      const words = countWords(txt);
-      const links = countOutboundLinks(html);
-      const hasTitle = /<title>.*<\/title>/i.test(html);
-      const hasMetaDesc = /<meta[^>]+name=["']description["'][^>]+>/i.test(html);
-      const hasCorePages = /(privacy policy|privacy-policy|terms of service|terms-of-service|contact)/i.test(txt);
-      const hasNav = /<nav|<header|<footer/i.test(html);
-      const flags = [];
-      if(words < 300) flags.push('Low content volume (<300 words)');
-      if(!hasMetaDesc) flags.push('Missing meta description');
-      if(!hasTitle) flags.push('Missing <title> tag');
-      if(!hasCorePages) flags.push('Missing core pages: Privacy, Terms, or Contact');
-      if(links > 50) flags.push('Too many outbound links (>50)');
+      return output.join("\n");
+    }
 
-      // Simple scoring
-      let score = 100;
-      score -= Math.max(0, 300 - words) * 0.05; // up to -15
-      score -= (!hasTitle ? 10 : 0);
-      score -= (!hasMetaDesc ? 10 : 0);
-      score -= (!hasCorePages ? 15 : 0);
-      score -= (links>50 ? 10 : 0);
-      score += (hasNav ? 5 : 0);
-      score = Math.max(0, Math.min(100, score));
+    async function runChecker(){
+      const htmlBox = document.getElementById("htmlInput");
+      const urlBox = document.getElementById("urlInput");
+      const out = document.getElementById("output");
 
-      setScore($('#adsenseScore'), score);
-      $('#adsenseWords').textContent = words;
-      $('#adsenseLinks').textContent = links;
-      $('#adsenseCore').textContent = hasCorePages ? 'Yes' : 'No';
-      $('#adsenseFlags').textContent = flags.length ? flags.length : '0';
+      let html = htmlBox.value.trim();
+      const url = urlBox.value.trim();
 
-      const tips = $('#adsenseTips');
-      tips.innerHTML = '';
-      const tipList = [
-        ...(words<600 ? ['Increase unique, helpful content (aim 600–1200 words per page).'] : []),
-        ...(!hasTitle ? ['Add a concise, descriptive <title> (50–60 chars).'] : []),
-        ...(!hasMetaDesc ? ['Add a meta description (120–160 chars; benefits-driven).'] : []),
-        ...(!hasCorePages ? ['Publish Privacy Policy, Terms of Service, and Contact pages; link in header/footer.'] : []),
-        ...(links>50 ? ['Reduce low-value outbound links; keep only credible references.'] : []),
-        ['Ensure original content, proper attribution, and avoid restricted topics.'],
-        ['Improve UX: clear navigation, readable fonts, mobile-first layout.']
-      ];
-      tipList.forEach(t => tips.appendChild(toItem('Tip', t)));
-      // Open results
-      $('#adsenseOut').parentElement.classList.add('open');
-    });
-    $('#adsenseClear').addEventListener('click', ()=>{
-      $('#adsenseUrl').value=''; $('#adsenseHtml').value='';
-      $('#adsenseOut').innerHTML=''; setScore($('#adsenseScore'), 0);
-      $('#adsenseWords').textContent='—'; $('#adsenseLinks').textContent='—'; $('#adsenseCore').textContent='—'; $('#adsenseFlags').textContent='—';
-    });
-
-    // 2) SEO Keyword Analyzer
-    $('#seoRun').addEventListener('click', async ()=>{
-      const kws = $('#seoKeywords').value.split(',').map(k=>k.trim().toLowerCase()).filter(Boolean);
-      let html = $('#seoContent').value.trim();
-      const url = $('#seoUrl').value.trim();
-      if(!html && url){ html = await fetchHtml(url) || ''; }
-      const txt = textOnly(html || '');
-      const totalWords = countWords(txt);
-      const tmp = document.createElement('div'); tmp.innerHTML = html || '';
-      const title = (tmp.querySelector('title')?.textContent || '').toLowerCase();
-      const metaDesc = (tmp.querySelector('meta[name="description"]')?.getAttribute('content') || '').toLowerCase();
-      const headings = Array.from(tmp.querySelectorAll('h1,h2,h3')).map(h=>h.textContent.toLowerCase());
-
-      const out = $('#seoOut'); out.innerHTML='';
-      out.appendChild(toItem('Total words', totalWords || '—'));
-      const list = document.createElement('div'); list.className='list';
-
-      kws.forEach(kw=>{
-        const re = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`,'gi');
-        const matches = (txt.match(re)||[]).length;
-        const density = totalWords ? ((matches/totalWords)*100).toFixed(2)+'%' : '—';
-        const inTitle = kw && title.includes(kw);
-        const inDesc = kw && metaDesc.includes(kw);
-        const inH = headings.some(h=>h.includes(kw));
-
-        const block = document.createElement('div');
-        block.className='code';
-        block.innerHTML = `Keyword: "${kw}" — occurrences: ${matches}, density: ${density}
-Title: ${inTitle?'yes':'no'} | Meta: ${inDesc?'yes':'no'} | Headings: ${inH?'yes':'no'}`;
-        list.appendChild(block);
-      });
-      out.appendChild(list);
-
-      const recs = document.createElement('div'); recs.className='list';
-      recs.appendChild(toItem('Tip', 'Use exact-match in title/meta once; avoid stuffing. Place variants in H2/H3.'));
-      recs.appendChild(toItem('Tip', 'Add descriptive alt text to images with natural keyword phrasing.'));
-      recs.appendChild(toItem('Tip', 'Link to authoritative sources; keep paragraphs focused with clear subheads.'));
-      out.appendChild(recs);
-      $('#seoOut').parentElement.classList.add('open');
-    });
-    $('#seoClear').addEventListener('click', ()=>{
-      $('#seoKeywords').value=''; $('#seoUrl').value=''; $('#seoContent').value=''; $('#seoOut').innerHTML='';
-    });
-
-    // 3) Headline Tester
-    const POWER_WORDS = ['proven','ultimate','secret','simple','quick','essential','guaranteed','win','boost','master','step-by-step','fast','effective','complete','expert'];
-    $('#headlineRun').addEventListener('click', ()=>{
-      const lines = $('#headlineList').value.split('\n').map(s=>s.trim()).filter(Boolean);
-      const out = $('#headlineOut'); out.innerHTML='';
-      lines.forEach(h=>{
-        const len = h.length;
-        const words = countWords(h);
-        const hasNum = /\b\d+\b/.test(h);
-        const hasColon = /:/.test(h);
-        const powerHits = POWER_WORDS.filter(w=>h.toLowerCase().includes(w)).length;
-        // scoring
-        let score = 50;
-        if(words>=5 && words<=12) score += 15;
-        if(len>=40 && len<=70) score += 10;
-        if(powerHits>=1) score += 8;
-        if(hasNum) score += 7;
-        if(hasColon) score += 5;
-        if(/you|your|for bloggers|for creators/i.test(h)) score += 5;
-        score = Math.min(100, score);
-
-        const wrap = document.createElement('div');
-        wrap.className='list';
-        const s = document.createElement('div'); s.className='score';
-        s.innerHTML = `<div class="dot"></div><strong>Score:</strong> <span>${score}/100</span>`;
-        s.classList.add(score>=80?'good':score>=50?'warn':'bad');
-        wrap.appendChild(s);
-
-        wrap.appendChild(toItem('Headline', h));
-        const fb = [];
-        if(!(words>=5 && words<=12)) fb.push('Aim for 5–12 words for scannability.');
-        if(!(len>=40 && len<=70)) fb.push('Keep 40–70 characters for SERP-friendly length.');
-        if(!hasNum) fb.push('Numbers add specificity (e.g., 7 Tips...).');
-        if(powerHits<1) fb.push('Add one power word sparingly (e.g., “Proven”, “Essential”).');
-        fb.push('Be concrete: outcome + timeframe + audience.');
-        const tips = document.createElement('div'); tips.className='list';
-        fb.forEach(t => tips.appendChild(toItem('Tip', t)));
-        wrap.appendChild(tips);
-        out.appendChild(wrap);
-      });
-      $('#headlineOut').parentElement.classList.add('open');
-    });
-    $('#headlineClear').addEventListener('click', ()=>{
-      $('#headlineList').value=''; $('#headlineOut').innerHTML='';
-    });
-
-    // 4) Idea Validation
-    $('#ideaRun').addEventListener('click', ()=>{
-      const name = $('#ideaName').value.trim() || 'Untitled idea';
-      const intent = +$('#ideaIntent').value||0;
-      const monetize = +$('#ideaMonetize').value||0;
-      const comp = +$('#ideaComp').value||0;
-      const season = +$('#ideaSeason').value||0;
-      const ease = +$('#ideaEase').value||0;
-      // Weighted: intent 0.25, monetize 0.25, ease 0.2, comp 0.2 (inverted), season 0.1 (inverted)
-      const compInv = 10 - Math.min(10, Math.max(0, comp));
-      const seasonInv = 10 - Math.min(10, Math.max(0, season));
-      const score = Math.round(
-        intent*2.5 + monetize*2.5 + ease*2.0 + compInv*2.0 + seasonInv*1.0
-      ); // out of 100
-
-      const out = $('#ideaOut'); out.innerHTML='';
-      const s = document.createElement('div'); s.className='score';
-      s.classList.add(score>=80?'good':score>=50?'warn':'bad');
-      s.innerHTML = `<div class="dot"></div><strong>Overall:</strong> <span>${score}/100</span>`;
-      out.appendChild(s);
-
-      const kpis = document.createElement('div'); kpis.className='kpi';
-      const mk = (lab,val)=>{const d=document.createElement('div');d.className='stat';d.innerHTML=`<div class="label">${lab}</div><div class="val">${val}/10</div>`;return d;};
-      kpis.appendChild(mk('Intent', intent)); kpis.appendChild(mk('Monetizability', monetize));
-      kpis.appendChild(mk('Competition (lower better)', comp)); kpis.appendChild(mk('Seasonality (lower better)', season));
-      kpis.appendChild(mk('Execution ease', ease));
-      out.appendChild(kpis);
-
-      const tips = document.createElement('div'); tips.className='list';
-      tips.appendChild(toItem('Next step', 'Validate with search data (Trends, Suggest, People Also Ask).'));
-      tips.appendChild(toItem('Positioning', 'Focus on a single painful task and deliver a fast win for first-time users.'));
-      tips.appendChild(toItem('Distribution', 'Target long-tail keywords and communities; ship a demo GIF and a 60-sec explainer.'));
-      tips.appendChild(toItem('Pricing', 'Start free with optional upgrades or templates—opt-in before paywalls.'));
-      out.appendChild(tips);
-      $('#ideaOut').parentElement.classList.add('open');
-    });
-    $('#ideaClear').addEventListener('click', ()=>{
-      ['ideaName','ideaIntent','ideaMonetize','ideaComp','ideaSeason','ideaEase'].forEach(id=>document.getElementById(id).value='');
-      $('#ideaOut').innerHTML='';
-    });
-
-    // 5) PageSpeed Insights
-    $('#psiRun').addEventListener('click', async ()=>{
-      const url = $('#psiUrl').value.trim();
-      const key = $('#psiKey').value.trim();
-      const strategy = $('#psiStrategy').value;
-      const out = $('#psiOut'); out.innerHTML='';
-      if(!url || !key){
-        out.appendChild(toItem('Error', 'URL and API key are required.'));
-        return;
-      }
-      const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}&key=${encodeURIComponent(key)}`;
-      try{
-        const res = await fetch(endpoint);
-        const data = await res.json();
-        const lighthouse = data.lighthouseResult;
-        if(!lighthouse){
-          out.appendChild(toItem('Error', 'No Lighthouse data returned.'));
+      if(!html && url){
+        const fetched = await fetchHtml(url);
+        if(!fetched){
+          out.innerHTML = '<p style="color:red">Could not fetch this URL (blocked or invalid). Try pasting the HTML instead.</p>';
           return;
         }
-        const perfScore = Math.round((lighthouse.categories.performance.score || 0)*100);
-        const metrics = lighthouse.audits;
-        const lcp = metrics['largest-contentful-paint']?.displayValue || '—';
-        const fid = metrics['total-blocking-time']?.displayValue || '—';
-        const cls = metrics['cumulative-layout-shift']?.displayValue || '—';
-        const tti = metrics['interactive']?.displayValue || '—';
-        const s = document.createElement('div'); s.className='score';
-        s.classList.add(perfScore>=80?'good':perfScore>=50?'warn':'bad');
-        s.innerHTML = `<div class="dot"></div><strong>Performance:</strong> <span>${perfScore}/100</span>`;
-        out.appendChild(s);
-
-        const kpis = document.createElement('div'); kpis.className='kpi';
-        const mk = (lab,val)=>{const d=document.createElement('div');d.className='stat';d.innerHTML=`<div class="label">${lab}</div><div class="val">${val}</div>`;return d;};
-        kpis.appendChild(mk('LCP', lcp));
-        kpis.appendChild(mk('Total Blocking Time', fid));
-        kpis.appendChild(mk('CLS', cls));
-        kpis.appendChild(mk('Time to Interactive', tti));
-        out.appendChild(kpis);
-
-        const tips = document.createElement('div'); tips.className='list';
-        tips.appendChild(toItem('Tip', 'Compress images, lazy-load below-the-fold assets.'));
-        tips.appendChild(toItem('Tip', 'Minify CSS/JS, defer non-critical scripts.'));
-        tips.appendChild(toItem('Tip', 'Reduce DOM complexity and third-party scripts.'));
-        out.appendChild(tips);
-        $('#psiOut').parentElement.classList.add('open');
-      }catch(e){
-        out.appendChild(toItem('Error', 'Request failed. Check API key, quota, and CORS.'));
+        html = fetched;
       }
-    });
-    $('#psiClear').addEventListener('click', ()=>{
-      $('#psiUrl').value=''; $('#psiKey').value=''; $('#psiOut').innerHTML='';
-    });
 
-    // 6) Schema Validation
-    const extractJsonLd = html => {
-      const tmp = document.createElement('div'); tmp.innerHTML = html || '';
-      const scripts = Array.from(tmp.querySelectorAll('script[type="application/ld+json"]'));
-      return scripts.map(s=>{
-        try{ return JSON.parse(s.textContent.trim()); }catch(e){ return {__error:'Invalid JSON', raw:s.textContent}; }
-      });
-    };
-    const validateSchema = obj => {
-      if(!obj || typeof obj!=='object') return {valid:false, errors:['Not an object']};
-      const errs = [];
-      if(!obj['@context']) errs.push('Missing @context');
-      if(!obj['@type']) errs.push('Missing @type');
-      // Basic Article/Product check
-      if(obj['@type']==='Article'){
-        if(!obj.headline) errs.push('Article.headline missing');
-        if(!obj.datePublished) errs.push('Article.datePublished missing');
-        if(!obj.author) errs.push('Article.author missing');
+      if(!html){
+        out.innerHTML = '<p style="color:red">Please paste HTML or enter a valid URL.</p>';
+        return;
       }
-      if(obj['@type']==='Product'){
-        if(!obj.name) errs.push('Product.name missing');
-        if(!obj.offers) errs.push('Product.offers missing');
-      }
-      return {valid: errs.length===0, errors: errs};
-    };
 
-    $('#schemaRun').addEventListener('click', async ()=>{
-      const url = $('#schemaUrl').value.trim();
-      let html = $('#schemaHtml').value.trim();
-      if(!html && url){ html = await fetchHtml(url) || ''; }
-      const out = $('#schemaOut'); out.innerHTML='';
-      if(!html){ out.appendChild(toItem('Error', 'Provide URL or HTML.')); return; }
-      const list = extractJsonLd(html);
-      if(!list.length){ out.appendChild(toItem('Result', 'No JSON‑LD scripts found.')); return; }
-      list.forEach((obj,idx)=>{
-        if(obj.__error){
-          const code = document.createElement('div'); code.className='code';
-          code.textContent = `Schema #${idx+1} — Invalid JSON`;
-          out.appendChild(code); return;
-        }
-        const v = validateSchema(obj);
-        const s = document.createElement('div'); s.className='score';
-        s.classList.add(v.valid?'good':'bad');
-        s.innerHTML = `<div class="dot"></div><strong>Schema #${idx+1}:</strong> <span>${v.valid?'valid':'issues found'}</span>`;
-        out.appendChild(s);
-        const code = document.createElement('div'); code.className='code';
-        code.textContent = JSON.stringify(obj,null,2);
-        out.appendChild(code);
-        if(v.errors.length){
-          const tips = document.createElement('div'); tips.className='list';
-          v.errors.forEach(e => tips.appendChild(toItem('Issue', e)));
-          out.appendChild(tips);
-        }
-      });
-      $('#schemaOut').parentElement.classList.add('open');
-    });
-    $('#schemaClear').addEventListener('click', ()=>{
-      $('#schemaUrl').value=''; $('#schemaHtml').value=''; $('#schemaOut').innerHTML='';
-    });
+      const result = checkAdSenseReadiness(html);
+      out.textContent = result;
+    }
   </script>
 </body>
 </html>
