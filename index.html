@@ -6,8 +6,7 @@
   <style>
     body { margin:0; font-family: 'Segoe UI', Arial, sans-serif; background:#f4f6f9; color:#333; }
     header { background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.1); padding:15px 40px; display:flex; align-items:center; justify-content:space-between; }
-    header .logo { display:flex; align-items:center; font-weight:bold; font-size:20px; color:#2c3e50; }
-    header .logo img { height:28px; margin-right:10px; }
+    header .logo { font-weight:bold; font-size:20px; color:#2c3e50; }
     nav a { margin:0 15px; text-decoration:none; color:#2c3e50; font-weight:500; }
     nav a:hover { color:#0077ff; }
 
@@ -22,57 +21,4 @@
     textarea, input[type="text"] { width:100%; padding:12px; margin:10px 0; font-size:14px; border:1px solid #ccc; border-radius:5px; }
     button.run { background:#0077ff; color:#fff; border:none; padding:12px 25px; font-size:14px; border-radius:5px; cursor:pointer; }
     button.run:hover { background:#005fcc; }
-    #output { margin-top:20px; padding:15px; background:#f9f9f9; border:1px solid #ccc; border-radius:5px; white-space:pre-wrap; }
-
-    footer { background:#2c3e50; color:#fff; padding:30px 40px; display:flex; justify-content:space-between; flex-wrap:wrap; }
-    footer .links a { color:#fff; margin:0 15px; text-decoration:none; font-size:14px; }
-    footer .links a:hover { text-decoration:underline; }
-    footer p { font-size:13px; margin-top:10px; }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="logo">
-      <img src="https://www.gstatic.com/adsense/autoads/icon-192.png" alt="AdSense Logo">
-      AdSense + SEO Checker
-    </div>
-    <nav>
-      <a href="#about">About</a>
-      <a href="#contact">Contact</a>
-      <a href="#privacy">Privacy Policy</a>
-      <a href="#terms">Terms & Conditions</a>
-      <a href="#disclaimer">Disclaimer</a>
-    </nav>
-  </header>
-
-  <section class="hero">
-    <h1>Boost Your AdSense & SEO Readiness</h1>
-    <p>Analyze your site for AdSense compliance, SEO essentials, and performance — all in one free tool.</p>
-    <button onclick="document.querySelector('.checker').scrollIntoView({behavior:'smooth'})">Start Checking</button>
-  </section>
-
-  <section class="checker">
-    <h2>Run the Checker</h2>
-    <p>Paste your page HTML or enter a URL below:</p>
-    <textarea id="htmlInput" rows="10" placeholder="Paste full HTML here..."></textarea>
-    <input type="text" id="urlInput" placeholder="Or enter a full URL (https://...)">
-    <button class="run" onclick="runChecker()">Check Readiness</button>
-    <div id="output"></div>
-  </section>
-
-  <footer>
-    <div class="links">
-      <a id="about" href="#">About</a>
-      <a id="contact" href="#">Contact</a>
-      <a id="privacy" href="#">Privacy Policy</a>
-      <a id="terms" href="#">Terms & Conditions</a>
-      <a id="disclaimer" href="#">Disclaimer</a>
-    </div>
-    <p>&copy; 2025 AdSense + SEO Checker. All rights reserved.</p>
-  </footer>
-
-  <script>
-    // --- Your existing checker logic goes here (with fallback fetchHtml etc.) ---
-  </script>
-</body>
-</html>
+    #output { margin-top
