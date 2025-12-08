@@ -115,7 +115,7 @@
         "Content depth": wordCount>=800
       };
 
-      // Crawl policy pages
+      // Crawl policy pages (await results!)
       const policyResults = await checkPolicyPages(url);
       const policy = {
         "Privacy Policy": policyResults["Privacy Policy"],
@@ -176,7 +176,4 @@
       const today = new Date().toLocaleDateString();
       out.innerHTML += `
         <div class="footer">
-          <p><strong>Disclaimer:</strong> This pre-check estimates AdSense eligibility based on technical and content factors. It does not guarantee approval, as final decisions depend on Google’s policies.</p>
-          <p><strong>Website:</strong> www.yoursaaschecker.com<br>
-             <strong>Email:</strong> support@yoursaaschecker.com<br>
-             <strong>
+          <p><strong>Disclaimer:</strong> This pre-check estimates AdSense eligibility based on technical and content factors. It does not
