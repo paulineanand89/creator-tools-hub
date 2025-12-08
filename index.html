@@ -10,31 +10,14 @@
       margin: 40px auto;
       padding: 0 20px;
     }
-    h1 {
-      color: #333;
-    }
+    h1 { color: #333; }
     textarea, input[type="text"] {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      font-size: 14px;
+      width: 100%; padding: 10px; margin: 10px 0; font-size: 14px;
     }
-    button {
-      padding: 10px 20px;
-      font-size: 14px;
-      cursor: pointer;
-    }
+    button { padding: 10px 20px; font-size: 14px; cursor: pointer; }
     #output {
-      margin-top: 20px;
-      padding: 15px;
-      background: #f9f9f9;
-      border: 1px solid #ccc;
-      white-space: pre-wrap;
-    }
-    .score {
-      font-weight: bold;
-      font-size: 16px;
-      margin-bottom: 10px;
+      margin-top: 20px; padding: 15px; background: #f9f9f9;
+      border: 1px solid #ccc; white-space: pre-wrap;
     }
   </style>
 </head>
@@ -44,7 +27,6 @@
   <textarea id="htmlInput" rows="10" placeholder="Paste full HTML here..."></textarea>
   <input type="text" id="urlInput" placeholder="Or enter a full URL (https://...)">
   <button onclick="runChecker()">Check Readiness</button>
-
   <div id="output"></div>
 
   <script>
@@ -54,9 +36,7 @@
         const res = await fetch(endpoint);
         if(!res.ok) return null;
         return await res.text();
-      } catch(e) {
-        return null;
-      }
+      } catch(e) { return null; }
     }
 
     async function fetchPerformance(url){
@@ -65,32 +45,21 @@
         const res = await fetch(api);
         if(!res.ok) return null;
         const data = await res.json();
-        const score = data.lighthouseResult.categories.performance.score * 100;
-        return score;
-      } catch(e){
-        return null;
-      }
+        return data.lighthouseResult.categories.performance.score * 100;
+      } catch(e){ return null; }
     }
 
     async function checkReadiness(url, html){
       const output = [];
-      let score = 0;
-      let totalChecks = 5; // ads.txt, AdSense script, Ad unit, robots.txt, canonical
-      let bonus = 0;
+      let score = 0, totalChecks = 5, bonus = 0;
 
       // --- AdSense checks ---
       try {
         const adsTxtUrl = new URL("/ads.txt", url).href;
         const adsRes = await fetchHtml(adsTxtUrl);
-        if(adsRes && adsRes.includes("google.com")){
-          output.push("✅ ads.txt file: Found");
-          score++;
-        } else {
-          output.push("❌ ads.txt file: Missing or no Google entry");
-        }
-      } catch {
-        output.push("❌ ads.txt file: Missing");
-      }
+        if(adsRes && adsRes.includes("google.com")){ output.push("✅ ads.txt file: Found"); score++; }
+        else { output.push("❌ ads.txt file: Missing or no Google entry"); }
+      } catch { output.push("❌ ads.txt file: Missing"); }
 
       const hasScriptAds = html.includes("pagead2.googlesyndication.com/pagead/js/adsbygoogle.js");
       if(hasScriptAds){ output.push("✅ AdSense script: Found"); score++; }
@@ -122,8 +91,13 @@
       try {
         const sitemapUrl = new URL("/sitemap.xml", url).href;
         const sitemapRes = await fetchHtml(sitemapUrl);
-        if(sitemapRes && sitemapRes.includes("<urlset")){ output.push("✅ sitemap.xml: Found"); bonus += 5; }
-        else { output.push("❌ sitemap.xml: Missing"); }
+        if(sitemapRes && sitemapRes.includes("<urlset")){
+          const matches = sitemapRes.match(/<loc>(.*?)<\/loc>/g) || [];
+          output.push("✅ sitemap.xml: Found ("+matches.length+" URLs)");
+          bonus += 5;
+          if(matches.length >= 20){ output.push("✅ Post count: "+matches.length+" (sufficient)"); bonus += 10; }
+          else { output.push("❌ Post count: "+matches.length+" (too few)"); }
+        } else { output.push("❌ sitemap.xml: Missing"); }
       } catch { output.push("❌ sitemap.xml: Missing"); }
 
       const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
@@ -143,24 +117,35 @@
 
       const bodyText = html.replace(/<[^>]*>/g, " ").trim();
       const wordCount = bodyText.split(/\s+/).length;
-      if(wordCount >= 300){ output.push("✅ Content length: " + wordCount + " words (sufficient)"); bonus += 10; }
-      else { output.push("❌ Content length: " + wordCount + " words (too short)"); }
+      if(wordCount >= 300){ output.push("✅ Content length: "+wordCount+" words (sufficient)"); bonus += 10; }
+      else { output.push("❌ Content length: "+wordCount+" words (too short)"); }
+
+      // --- Prohibited content scan ---
+      const blacklist = ["porn","sex","gambling","casino","drugs","torrent","violence","weapon"];
+      const foundBad = blacklist.filter(word => bodyText.toLowerCase().includes(word));
+      if(foundBad.length > 0){ output.push("❌ Prohibited content detected: "+foundBad.join(", ")); }
+      else { output.push("✅ No prohibited content detected"); bonus += 5; }
+
+      // --- Basic originality check (heuristic) ---
+      const snippet = bodyText.split(/\s+/).slice(0,20).join(" ");
+      if(snippet.length > 0){
+        output.push("⚠️ Originality check: Run snippet search manually → \""+snippet+"\"");
+        // Note: For free use, instruct user to paste snippet into Google/Bing search.
+      }
 
       // --- Performance check ---
       const perfScore = await fetchPerformance(url);
       if(perfScore !== null){
-        output.push("✅ Performance score (PageSpeed): " + perfScore + "/100");
-        bonus += Math.round(perfScore / 20); // up to +5 bonus
-      } else {
-        output.push("❌ Performance score: Could not fetch");
-      }
+        output.push("✅ Performance score (PageSpeed): "+perfScore+"/100");
+        bonus += Math.round(perfScore/20);
+      } else { output.push("❌ Performance score: Could not fetch"); }
 
-      // Calculate percentage score
-      const basePercentage = Math.round((score / totalChecks) * 100);
+      // --- Final scoring ---
+      const basePercentage = Math.round((score/totalChecks)*100);
       const totalScore = basePercentage + bonus;
-      const summary = `Readiness Score: ${basePercentage}/100\nBonus Points: +${bonus}\nFinal Score: ${totalScore}/165`;
+      const summary = `Readiness Score: ${basePercentage}/100\nBonus Points: +${bonus}\nFinal Score: ${totalScore}/180`;
 
-      return summary + "\n\n" + output.join("\n");
+      return summary+"\n\n"+output.join("\n");
     }
 
     async function runChecker(){
@@ -174,7 +159,7 @@
       if(!html && url){
         const fetched = await fetchHtml(url);
         if(!fetched){
-          out.innerHTML = '<p style="color:red">Could not fetch this URL (blocked or invalid). Try pasting the HTML instead.</p>';
+          out.innerHTML = '<p style="color:red">Could not fetch this URL. Try pasting the HTML instead.</p>';
           return;
         }
         html = fetched;
@@ -182,12 +167,3 @@
 
       if(!html || !url){
         out.innerHTML = '<p style="color:red">Please paste HTML or enter a valid URL.</p>';
-        return;
-      }
-
-      const result = await checkReadiness(url, html);
-      out.textContent = result;
-    }
-  </script>
-</body>
-</html>
