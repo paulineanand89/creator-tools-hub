@@ -4,11 +4,38 @@
   <meta charset="UTF-8">
   <title>AdSense + SEO Readiness Checker</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; }
-    h1 { color: #333; }
-    textarea, input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; font-size: 14px; }
-    button { padding: 10px 20px; font-size: 14px; cursor: pointer; }
-    #output { margin-top: 20px; padding: 15px; background: #f9f9f9; border: 1px solid #ccc; white-space: pre-wrap; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 14px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #output {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border: 1px solid #ccc;
+      white-space: pre-wrap;
+    }
+    .score {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -17,6 +44,7 @@
   <textarea id="htmlInput" rows="10" placeholder="Paste full HTML here..."></textarea>
   <input type="text" id="urlInput" placeholder="Or enter a full URL (https://...)">
   <button onclick="runChecker()">Check Readiness</button>
+
   <div id="output"></div>
 
   <script>
@@ -26,7 +54,9 @@
         const res = await fetch(endpoint);
         if(!res.ok) return null;
         return await res.text();
-      } catch(e) { return null; }
+      } catch(e) {
+        return null;
+      }
     }
 
     async function fetchPerformance(url){
@@ -35,22 +65,102 @@
         const res = await fetch(api);
         if(!res.ok) return null;
         const data = await res.json();
-        return data.lighthouseResult.categories.performance.score * 100;
-      } catch(e){ return null; }
+        const score = data.lighthouseResult.categories.performance.score * 100;
+        return score;
+      } catch(e){
+        return null;
+      }
     }
 
     async function checkReadiness(url, html){
       const output = [];
-      let score = 0, totalChecks = 5, bonus = 0;
+      let score = 0;
+      let totalChecks = 5; // ads.txt, AdSense script, Ad unit, robots.txt, canonical
+      let bonus = 0;
 
-      // (… all the checks we discussed …)
+      // --- AdSense checks ---
+      try {
+        const adsTxtUrl = new URL("/ads.txt", url).href;
+        const adsRes = await fetchHtml(adsTxtUrl);
+        if(adsRes && adsRes.includes("google.com")){
+          output.push("✅ ads.txt file: Found");
+          score++;
+        } else {
+          output.push("❌ ads.txt file: Missing or no Google entry");
+        }
+      } catch {
+        output.push("❌ ads.txt file: Missing");
+      }
 
-      // --- Final scoring ---
-      const basePercentage = Math.round((score/totalChecks)*100);
+      const hasScriptAds = html.includes("pagead2.googlesyndication.com/pagead/js/adsbygoogle.js");
+      if(hasScriptAds){ output.push("✅ AdSense script: Found"); score++; }
+      else { output.push("❌ AdSense script: Missing"); }
+
+      const hasAdUnits = html.includes("class=\"adsbygoogle\"");
+      if(hasAdUnits){ output.push("✅ Ad unit tags: Found"); score++; }
+      else { output.push("❌ Ad unit tags: Missing"); }
+
+      // --- SEO checks ---
+      try {
+        const robotsUrl = new URL("/robots.txt", url).href;
+        const robotsRes = await fetchHtml(robotsUrl);
+        if(robotsRes){ output.push("✅ robots.txt file: Found"); score++; }
+        else { output.push("❌ robots.txt file: Missing"); }
+      } catch { output.push("❌ robots.txt file: Missing"); }
+
+      const canonicalMatch = html.match(/<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i);
+      if(canonicalMatch){ output.push("✅ Canonical tag: Found → " + canonicalMatch[1]); score++; }
+      else { output.push("❌ Canonical tag: Missing"); }
+
+      // --- Bonus checks ---
+      if(url.startsWith("https://")){ output.push("✅ HTTPS: Secure connection"); bonus += 5; }
+      else { output.push("❌ HTTPS: Not secure"); }
+
+      if(html.includes("<meta name=\"viewport\"")){ output.push("✅ Mobile-friendly viewport meta: Found"); bonus += 5; }
+      else { output.push("❌ Mobile-friendly viewport meta: Missing"); }
+
+      try {
+        const sitemapUrl = new URL("/sitemap.xml", url).href;
+        const sitemapRes = await fetchHtml(sitemapUrl);
+        if(sitemapRes && sitemapRes.includes("<urlset")){ output.push("✅ sitemap.xml: Found"); bonus += 5; }
+        else { output.push("❌ sitemap.xml: Missing"); }
+      } catch { output.push("❌ sitemap.xml: Missing"); }
+
+      const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+      if(metaDescMatch){ output.push("✅ Meta description: Found → " + metaDescMatch[1]); bonus += 5; }
+      else { output.push("❌ Meta description: Missing"); }
+
+      const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+      if(titleMatch){ output.push("✅ Title tag: Found → " + titleMatch[1]); bonus += 5; }
+      else { output.push("❌ Title tag: Missing"); }
+
+      const hasPrivacy = html.toLowerCase().includes("privacy policy");
+      const hasTerms = html.toLowerCase().includes("terms of service") || html.toLowerCase().includes("terms and conditions");
+      if(hasPrivacy){ output.push("✅ Privacy Policy page/link: Found"); bonus += 5; }
+      else { output.push("❌ Privacy Policy page/link: Missing"); }
+      if(hasTerms){ output.push("✅ Terms of Service page/link: Found"); bonus += 5; }
+      else { output.push("❌ Terms of Service page/link: Missing"); }
+
+      const bodyText = html.replace(/<[^>]*>/g, " ").trim();
+      const wordCount = bodyText.split(/\s+/).length;
+      if(wordCount >= 300){ output.push("✅ Content length: " + wordCount + " words (sufficient)"); bonus += 10; }
+      else { output.push("❌ Content length: " + wordCount + " words (too short)"); }
+
+      // --- Performance check ---
+      const perfScore = await fetchPerformance(url);
+      if(perfScore !== null){
+        output.push("✅ Performance score (PageSpeed): " + perfScore + "/100");
+        bonus += Math.round(perfScore / 20); // up to +5 bonus
+      } else {
+        output.push("❌ Performance score: Could not fetch");
+      }
+
+      // Calculate percentage score
+      const basePercentage = Math.round((score / totalChecks) * 100);
       const totalScore = basePercentage + bonus;
-      const summary = `Readiness Score: ${basePercentage}/100\nBonus Points: +${bonus}\nFinal Score: ${totalScore}/180`;
+      const summary = `Readiness Score: ${basePercentage}/100\nBonus Points: +${bonus}\nFinal Score: ${totalScore}/165`;
 
-      return summary+"\n\n"+output.join("\n");
+      return summary + "\n\n" + output.join("\n");
     }
 
     async function runChecker(){
@@ -64,7 +174,7 @@
       if(!html && url){
         const fetched = await fetchHtml(url);
         if(!fetched){
-          out.innerHTML = '<p style="color:red">Could not fetch this URL. Try pasting the HTML instead.</p>';
+          out.innerHTML = '<p style="color:red">Could not fetch this URL (blocked or invalid). Try pasting the HTML instead.</p>';
           return;
         }
         html = fetched;
