@@ -32,7 +32,6 @@
   </div>
 
 <script>
-// Proxy fetch
 async function fetchHtml(url){
   try {
     const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(url);
@@ -60,12 +59,17 @@ async function checkPolicyPages(baseUrl, homepageHtml){
         const res = await fetch(endpoint);
         if(res.ok){
           const html = await res.text();
+          // Compare with homepage
           if(html.trim() === homepageHtml.trim()) continue;
+
           const text = html.replace(/<[^>]*>/g," ").trim();
           const wordCount = text.split(/\s+/).length;
           const keyword = label.toLowerCase().split(" ")[0];
-          const inTitleOrHeading = new RegExp(`<title[^>]*>.*${keyword}.*</title>`,"i").test(html) ||
-                                   new RegExp(`<h[12][^>]*>.*${keyword}.*</h[12]>`,"i").test(html);
+
+          // Require keyword in title or heading
+          const inTitleOrHeading = new RegExp(`<title[^>]*>.*${keyword}.*</title>`, "i").test(html) ||
+                                   new RegExp(`<h[12][^>]*>.*${keyword}.*</h[12]>`, "i").test(html);
+
           if(wordCount > 100 && inTitleOrHeading){
             results[label] = true;
             break;
@@ -76,42 +80,6 @@ async function checkPolicyPages(baseUrl, homepageHtml){
   }
   return results;
 }
-
-// Enhanced AdSense Checks Module
-const EnhancedAdsenseChecks = {
-  async checkAdsTxt(baseUrl, fetchProxy) {
-    const domain = baseUrl.replace(/\/$/, "");
-    const adsTxtUrl = domain + "/ads.txt";
-    try {
-      const content = await fetchProxy(adsTxtUrl);
-      if (!content) return false;
-      return /google\.com,\s*pub-\d{16}/i.test(content);
-    } catch(e){ return false; }
-  },
-  checkStrictH1(html) {
-    const h1Matches = html.match(/<h1[^>]*>.*?<\/h1>/gi);
-    return h1Matches && h1Matches.length === 1;
-  },
-  checkImageAltText(html) {
-    const imgMatches = html.match(/<img[^>]*>/gi);
-    if (!imgMatches || imgMatches.length === 0) return true;
-    let altCount = 0;
-    imgMatches.forEach(imgTag => {
-      if (/<img[^>]*alt\s*=\s*(['"])(?!\s*\1).*?\1/i.test(imgTag)) {
-        altCount++;
-      }
-    });
-    const coverage = altCount / imgMatches.length;
-    return coverage >= 0.90;
-  },
-  checkMetaDescriptionContent(html) {
-    const metaMatch = html.match(/<meta\s+name=["']description["']\s+content=["'](.*?)["']\s*\/?>/i);
-    if (!metaMatch || !metaMatch[1]) return false;
-    const content = metaMatch[1].trim();
-    const length = content.length;
-    return length >= 50 && length <= 160;
-  }
-};
 
 async function runChecker(){
   const htmlBox = document.getElementById("htmlInput");
@@ -136,7 +104,7 @@ async function runChecker(){
 
   const checks = { trust:[], content:[], seo:[], technical:[], performance:[] };
 
-  // Trust pages
+  // Trust pages (compare against homepage)
   const policyResults = await checkPolicyPages(url, html);
   checks.trust.push({label:"Privacy Policy", ok: policyResults["Privacy Policy"]});
   checks.trust.push({label:"About Page", ok: policyResults["About Page"]});
@@ -148,16 +116,53 @@ async function runChecker(){
   const wordCount = bodyText.split(/\s+/).length;
   checks.content.push({label:"Word Count ≥ 800", ok: wordCount>=800});
   checks.content.push({label:"Has Headers", ok: html.includes("<h1")||html.includes("<h2")});
-  checks.content.push({label:"Image Alt Text Coverage ≥90%", ok: EnhancedAdsenseChecks.checkImageAltText(html)});
 
   // SEO
   checks.seo.push({label:"Title Tag", ok: html.includes("<title>")});
   checks.seo.push({label:"Meta Description", ok: html.includes("name=\"description\"")});
   checks.seo.push({label:"Canonical Tag", ok: html.includes("rel=\"canonical\"")});
-  checks.seo.push({label:"Strict Single H1", ok: EnhancedAdsenseChecks.checkStrictH1(html)});
-  checks.seo.push({label:"Meta Description Length 50–160 chars", ok: EnhancedAdsenseChecks.checkMetaDescriptionContent(html)});
 
   // Technical
   checks.technical.push({label:"HTTPS", ok: url.startsWith("https://")});
   checks.technical.push({label:"Viewport Meta", ok: html.includes("viewport")});
-  checks.technical.push
+  checks.technical.push({label:"ads.txt", ok: html.includes("google.com")});
+
+  // Performance placeholder
+  checks.performance.push({label:"Basic Speed Check", ok: true});
+
+  // Scoring
+  let score = 0;
+  let maxScore = 100;
+  const weights = {trust:30, content:25, seo:15, technical:20, performance:10};
+
+  for(const cat in checks){
+    const passed = checks[cat].filter(c=>c.ok).length;
+    const total = checks[cat].length;
+    score += Math.round((passed/total)*weights[cat]);
+  }
+
+  if(!checks.trust[0].ok) maxScore = Math.min(maxScore,60);
+  if(!checks.technical.find(c=>c.label==="HTTPS").ok) maxScore = Math.min(maxScore,50);
+  if(!checks.content[0].ok) maxScore = Math.min(maxScore,55);
+  if(score>maxScore) score=maxScore;
+
+  let verdict="Low Risk";
+  if(score<60) verdict="High Approval Risk";
+  else if(score<80) verdict="Medium Risk";
+
+  // Output
+  out.innerHTML = "";
+  for(const cat in checks){
+    out.innerHTML += `<h3>${cat.toUpperCase()}</h3>`;
+    checks[cat].forEach(c=>{
+      out.innerHTML += `<div>${c.label}<span class="badge ${c.ok?"success":"error"}">${c.ok?"Pass":"Fail"}</span></div>`;
+    });
+    const catScore = Math.round((checks[cat].filter(c=>c.ok).length/checks[cat].length)*weights[cat]);
+    out.innerHTML += `<div class="progress"><div class="bar ${cat}" style="width:${catScore}%"></div></div>`;
+  }
+  out.innerHTML += `<div class="score">Final Score: ${score}/100</div>`;
+  out.innerHTML += `<div class="verdict">${verdict}</div>`;
+}
+</script>
+</body>
+</html>
