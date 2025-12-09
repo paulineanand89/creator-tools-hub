@@ -42,7 +42,7 @@ async function fetchHtml(url){
 }
 
 // Strict trust page existence check
-async function checkPolicyPages(baseUrl){
+async function checkPolicyPages(baseUrl, homepageHtml){
   const paths = {
     "Privacy Policy": ["/privacy-policy","/privacy"],
     "About Page": ["/about","/about-us"],
@@ -61,9 +61,11 @@ async function checkPolicyPages(baseUrl){
           const html = await res.text();
           const text = html.replace(/<[^>]*>/g," ").trim();
           const wordCount = text.split(/\s+/).length;
-          // Require at least 100 words AND keyword match
           const keyword = label.toLowerCase().split(" ")[0]; 
-          if(wordCount > 100 && text.toLowerCase().includes(keyword)){
+          // Require: enough words, keyword present, and not identical to homepage
+          if(wordCount > 100 &&
+             text.toLowerCase().includes(keyword) &&
+             html !== homepageHtml){
             results[label] = true;
             break;
           }
@@ -97,8 +99,8 @@ async function runChecker(){
 
   const checks = { trust:[], content:[], seo:[], technical:[], performance:[] };
 
-  // Trust pages
-  const policyResults = await checkPolicyPages(url);
+  // Trust pages (compare against homepage)
+  const policyResults = await checkPolicyPages(url, html);
   checks.trust.push({label:"Privacy Policy", ok: policyResults["Privacy Policy"]});
   checks.trust.push({label:"About Page", ok: policyResults["About Page"]});
   checks.trust.push({label:"Contact Page", ok: policyResults["Contact Page"]});
