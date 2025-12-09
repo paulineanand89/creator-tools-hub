@@ -41,6 +41,7 @@ async function fetchHtml(url){
   } catch(e){ console.error("fetchHtml error", e); return null; }
 }
 
+// Strict trust page existence check
 async function checkPolicyPages(baseUrl){
   const paths = {
     "Privacy Policy": ["/privacy-policy","/privacy"],
@@ -56,7 +57,17 @@ async function checkPolicyPages(baseUrl){
       try {
         const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(fullUrl);
         const res = await fetch(endpoint);
-        if(res.ok){ results[label] = true; break; }
+        if(res.ok){
+          const html = await res.text();
+          const text = html.replace(/<[^>]*>/g," ").trim();
+          const wordCount = text.split(/\s+/).length;
+          // Require at least 100 words AND keyword match
+          const keyword = label.toLowerCase().split(" ")[0]; 
+          if(wordCount > 100 && text.toLowerCase().includes(keyword)){
+            results[label] = true;
+            break;
+          }
+        }
       } catch(e){ console.error("Policy check failed", label, e); }
     }
   }
@@ -144,7 +155,6 @@ async function runChecker(){
   }
   out.innerHTML += `<div class="score">Final Score: ${score}/100</div>`;
   out.innerHTML += `<div class="verdict">${verdict}</div>`;
-  out.innerHTML += `<button onclick="window.print()">Download Free Report (PDF)</button>`;
 }
 </script>
 </body>
