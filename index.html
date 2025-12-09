@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>AdSensePass Readiness Checker</title>
+  <title>Free AdSense Readiness & SEO Pre-Checker</title>
   <style>
     body { font-family: Inter, Arial, sans-serif; background:#f5f7fa; margin:0; line-height:1.6; }
     header { background:#2d3748; color:#fff; padding:15px 30px; font-size:18px; font-weight:600; }
@@ -11,22 +11,19 @@
     textarea, input[type="text"] { width:100%; padding:12px; margin:10px 0; border:1px solid #cbd5e0; border-radius:6px; font-size:14px; }
     button { background:#3182ce; color:#fff; border:none; padding:12px 20px; border-radius:6px; font-size:14px; cursor:pointer; transition:background 0.2s; }
     button:hover { background:#2b6cb0; }
-    .progress { background:#edf2f7; border-radius:6px; overflow:hidden; margin:10px 0; height:14px; }
-    .bar { height:14px; background:#ccc; }
-    .badge { display:inline-block; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; margin-left:10px; }
-    .success { background:#c6f6d5; color:#22543d; }
-    .error { background:#fed7d7; color:#742a2a; }
     .score { margin-top:20px; font-size:18px; font-weight:600; color:#2d3748; }
     .verdict { font-size:16px; font-weight:600; margin-top:10px; }
     form input, form textarea { width:100%; padding:10px; margin:8px 0; border:1px solid #cbd5e0; border-radius:6px; }
     form button { background:#3182ce; color:#fff; border:none; padding:12px 20px; border-radius:6px; cursor:pointer; }
     form button:hover { background:#2b6cb0; }
     footer { background:#2d3748; color:#fff; padding:20px; text-align:center; font-size:14px; margin-top:40px; }
-    footer a { color:#cbd5e0; margin:0 10px; text-decoration:none; }
+    footer button { background:none; border:none; color:#cbd5e0; margin:0 10px; cursor:pointer; font-size:14px; }
+    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); }
+    .modal-content { background:#fff; margin:10% auto; padding:20px; border-radius:8px; max-width:600px; }
   </style>
 </head>
 <body>
-  <header>https://adsensepass.blogspot.com/ — AdSense Check Requirements</header>
+  <header>Free AdSense Readiness & SEO Pre-Checker</header>
 
   <!-- Checker -->
   <div class="container">
@@ -38,82 +35,89 @@
     <div id="output"></div>
   </div>
 
-  <!-- Privacy Policy -->
-  <div class="container" id="privacy-policy">
-    <h1>Privacy Policy</h1>
-    <p>Your privacy is important to us. This Privacy Policy explains how we collect, use, and protect your information when you visit our website.</p>
-    <p>We may collect personal information such as your name, email address, or other details when you voluntarily provide them. We also use cookies and third‑party advertising partners (including Google AdSense) to deliver relevant ads.</p>
-    <p>Google, as a third‑party vendor, uses cookies to serve ads on our site. Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads">Google Ads Settings</a>.</p>
-    <p>We do not sell or share your personal information with outside parties except as required by law.</p>
-    <p>By using our site, you consent to this Privacy Policy.</p>
+  <!-- Modals -->
+  <div id="privacyModal" class="modal">
+    <div class="modal-content">
+      <h1>Privacy Policy</h1>
+      <p>Your privacy is important to us. This Privacy Policy explains how we collect, use, and protect your information when you visit our website.</p>
+      <p>We may collect personal information such as your name, email address, or other details when you voluntarily provide them. We also use cookies and third‑party advertising partners (including Google AdSense) to deliver relevant ads.</p>
+      <p>Google, as a third‑party vendor, uses cookies to serve ads on our site. Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads">Google Ads Settings</a>.</p>
+      <p>We do not sell or share your personal information with outside parties except as required by law.</p>
+      <p>By using our site, you consent to this Privacy Policy.</p>
+    </div>
   </div>
 
-  <!-- About Page -->
-  <div class="container" id="about">
-    <h1>About Us</h1>
-    <p>Welcome to https://adsensepass.blogspot.com/. We are dedicated to providing high‑quality content on AdSense Check requirements.</p>
-    <p>Our mission is to share useful insights, tutorials, and resources that help our readers understand AdSense eligibility and readiness.</p>
-    <p>Founded in 2025, we continue to grow thanks to our community of readers and contributors.</p>
-    <p>We believe in transparency, originality, and delivering value to every visitor.</p>
+  <div id="aboutModal" class="modal">
+    <div class="modal-content">
+      <h1>About Us</h1>
+      <p>Welcome to our site. We are dedicated to providing high‑quality content on AdSense Check requirements.</p>
+      <p>Our mission is to share useful insights, tutorials, and resources that help our readers understand AdSense eligibility and readiness.</p>
+      <p>We believe in transparency, originality, and delivering value to every visitor.</p>
+    </div>
   </div>
 
-  <!-- Contact Page -->
-  <div class="container" id="contact">
-    <h1>Contact Us</h1>
-    <p>We’d love to hear from you. If you have questions, feedback, or business inquiries, please reach out:</p>
-    <form>
-      <label for="name">Name (Optional)</label>
-      <input type="text" id="name" name="name" placeholder="Your name">
+  <div id="contactModal" class="modal">
+    <div class="modal-content">
+      <h1>Contact Us</h1>
+      <p>We’d love to hear from you. If you have questions, feedback, or business inquiries, please reach out:</p>
+      <form>
+        <label for="name">Name (Optional)</label>
+        <input type="text" id="name" name="name" placeholder="Your name">
 
-      <label for="email">Email Address (Required)</label>
-      <input type="email" id="email" name="email" placeholder="Your email" required>
+        <label for="email">Email Address (Required)</label>
+        <input type="email" id="email" name="email" placeholder="Your email" required>
 
-      <label for="message">Message / Inquiry (Required)</label>
-      <textarea id="message" name="message" rows="5" placeholder="Your message" required></textarea>
+        <label for="message">Message / Inquiry (Required)</label>
+        <textarea id="message" name="message" rows="5" placeholder="Your message" required></textarea>
 
-      <button type="submit">Send</button>
-    </form>
-    <p>We aim to reply within 48 hrs.</p>
+        <button type="submit">Send</button>
+      </form>
+      <p>We aim to reply within 48 hrs.</p>
+    </div>
   </div>
 
-  <!-- Terms & Disclaimer -->
-  <div class="container" id="terms">
-    <h1>Terms & Conditions / Disclaimer</h1>
-    <p>By accessing and using this website, you agree to the following terms:</p>
-    <ul>
-      <li>All content is provided for informational purposes only. We make no guarantees of accuracy or completeness.</li>
-      <li>You may not copy, reproduce, or redistribute our content without permission.</li>
-      <li>We are not liable for any damages resulting from the use of this site.</li>
-      <li>External links may lead to third‑party sites. We are not responsible for their content or practices.</li>
-      <li>This tool provides a readiness score only. It does <strong>not</strong> promise, guarantee, or imply that AdSense approval will be granted. Approval decisions rest solely with Google AdSense.</li>
-    </ul>
-    <p>These terms are subject to change without notice. Continued use of the site indicates acceptance of the current terms.</p>
+  <div id="termsModal" class="modal">
+    <div class="modal-content">
+      <h1>Terms & Conditions / Disclaimer</h1>
+      <ul>
+        <li>All content is provided for informational purposes only. We make no guarantees of accuracy or completeness.</li>
+        <li>You may not copy, reproduce, or redistribute our content without permission.</li>
+        <li>We are not liable for any damages resulting from the use of this site.</li>
+        <li>External links may lead to third‑party sites. We are not responsible for their content or practices.</li>
+        <li>This tool provides a readiness score only. It does <strong>not</strong> promise, guarantee, or imply that AdSense approval will be granted. Approval decisions rest solely with Google AdSense.</li>
+      </ul>
+    </div>
   </div>
 
   <!-- Footer -->
   <footer>
-    <p>
-      <a href="#privacy-policy">Privacy Policy</a> |
-      <a href="#about">About Us</a> |
-      <a href="#contact">Contact</a> |
-      <a href="#terms">Terms & Disclaimer</a>
-    </p>
-    <p>&copy; https://adsensepass.blogspot.com/ 2025. All rights reserved.</p>
+    <button onclick="openModal('privacyModal')">Privacy Policy</button> |
+    <button onclick="openModal('aboutModal')">About Us</button> |
+    <button onclick="openModal('contactModal')">Contact</button> |
+    <button onclick="openModal('termsModal')">Terms & Disclaimer</button>
+    <p>&copy; Our Site 2025. All rights reserved.</p>
   </footer>
 
 <script>
-// Example simplified checker logic
-async function runChecker(){
+function runChecker(){
   const out = document.getElementById("output");
   out.innerHTML = "<p>Running checks...</p>";
-
-  // Example scoring logic
   let score = 75;
   let verdict = "Medium Risk";
-
   out.innerHTML = `<div class="score">Final Score: ${score}/100</div>`;
   out.innerHTML += `<div class="verdict">${verdict}</div>`;
   out.innerHTML += `<p style='margin-top:20px; font-size:13px; color:#555;'>Disclaimer: This tool provides a readiness score only. It does not promise, guarantee, or imply that AdSense approval will be granted. Approval decisions rest solely with Google AdSense.</p>`;
+}
+
+// Modal logic
+function openModal(id){
+  document.getElementById(id).style.display = "block";
+}
+window.onclick = function(event){
+  const modals = document.getElementsByClassName("modal");
+  for(let m of modals){
+    if(event.target == m){ m.style.display = "none"; }
+  }
 }
 </script>
 </body>
