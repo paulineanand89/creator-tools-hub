@@ -1,98 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>AdSense Readiness Checker (Phase 1)</title>
-  <style>
-    body { font-family: Inter, Arial, sans-serif; background:#f5f7fa; margin:0; }
-    header { background:#2d3748; color:#fff; padding:15px 30px; font-size:18px; font-weight:600; }
-    .container { max-width:900px; margin:40px auto; background:#fff; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); padding:30px; }
-    h1 { font-size:24px; margin-bottom:10px; color:#2d3748; }
-    textarea, input[type="text"] { width:100%; padding:12px; margin:10px 0; border:1px solid #cbd5e0; border-radius:6px; font-size:14px; }
-    button { background:#3182ce; color:#fff; border:none; padding:12px 20px; border-radius:6px; font-size:14px; cursor:pointer; transition:background 0.2s; }
-    button:hover { background:#2b6cb0; }
-    .progress { background:#edf2f7; border-radius:6px; overflow:hidden; margin:10px 0; height:14px; }
-    .bar { height:14px; background:#ccc; }
-    .badge { display:inline-block; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; margin-left:10px; }
-    .success { background:#c6f6d5; color:#22543d; }
-    .error { background:#fed7d7; color:#742a2a; }
-    .score { margin-top:20px; font-size:18px; font-weight:600; color:#2d3748; }
-    .verdict { font-size:16px; font-weight:600; margin-top:10px; }
-  </style>
-</head>
-<body>
-  <header>AdSense Readiness Checker</header>
-  <div class="container">
-    <h1>Technical Audit & Eligibility Indicators</h1>
-    <p>Paste HTML or enter a URL below:</p>
-    <textarea id="htmlInput" rows="8" placeholder="Paste full HTML here..."></textarea>
-    <input type="text" id="urlInput" placeholder="Or enter a full URL (https://...)">
-    <button onclick="runChecker()">Run Pre-Check</button>
-    <div id="output"></div>
-  </div>
-
-<script>
-// Proxy fetch
-async function fetchHtml(url){
-  try {
-    const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(url);
-    const res = await fetch(endpoint);
-    if(!res.ok) return null;
-    return await res.text();
-  } catch(e){ return null; }
-}
-
-// Strict trust page existence
-async function checkPolicyPages(baseUrl){
-  const paths = {
-    "Privacy Policy": ["/privacy-policy","/privacy"],
-    "About Page": ["/about","/about-us"],
-    "Contact Page": ["/contact","/contact-us"],
-    "Terms / Disclaimer": ["/terms","/disclaimer"]
-  };
-  const results = {};
-  for(const label in paths){
-    results[label] = false;
-    for(const path of paths[label]){
-      let fullUrl = baseUrl.replace(/\/$/, "") + path;
-      try {
-        const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(fullUrl);
-        const res = await fetch(endpoint);
-        if(res.ok){
-          const html = await res.text();
-          const lower = html.toLowerCase();
-          if(lower.includes("privacy") || lower.includes("about") || lower.includes("contact") || lower.includes("terms") || lower.includes("disclaimer")){
-            results[label] = true;
-            break;
-          }
-        }
-      } catch(e){ /* ignore */ }
-    }
-  }
-  return results;
-}
-
-// robots.txt and sitemap.xml checks
-async function checkRobotsAndSitemap(baseUrl){
-  const results = { robots:false, sitemap:false };
-  try {
-    const robotsUrl = baseUrl.replace(/\/$/,"") + "/robots.txt";
-    const robotsRes = await fetch("https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(robotsUrl));
-    if(robotsRes.ok){ results.robots = true; }
-  } catch(e){}
-
-  try {
-    const sitemapUrl = baseUrl.replace(/\/$/,"") + "/sitemap.xml";
-    const sitemapRes = await fetch("https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(sitemapUrl));
-    if(sitemapRes.ok){
-      const xml = await sitemapRes.text();
-      if(xml.includes("<url>")) results.sitemap = true;
-    }
-  } catch(e){}
-  return results;
-}
-
-// Main checker
+// -------- Main Checker --------
 async function runChecker(){
   const htmlBox = document.getElementById("htmlInput");
   const urlBox = document.getElementById("urlInput");
@@ -174,4 +80,11 @@ async function runChecker(){
     checks[cat].forEach(c=>{
       out.innerHTML += `<div>${c.label}<span class="badge ${c.ok?"success":"error"}">${c.ok?"Pass":"Fail"}</span></div>`;
     });
-    const catScore = Math.round((checks
+    const catScore = Math.round((checks[cat].filter(c=>c.ok).length/checks[cat].length)*weights[cat]);
+    out.innerHTML += `<div class="progress"><div class="bar ${cat}" style="width:${catScore}%"></div></div>`;
+  }
+
+  out.innerHTML += `<div class="score">Final Score: ${score}/100</div>`;
+  out.innerHTML += `<div class="verdict">${verdict}</div>`;
+  out.innerHTML += `<button onclick="window.print()">Download Free Report (PDF)</button>`;
+}
