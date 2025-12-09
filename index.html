@@ -160,7 +160,4 @@ async function runChecker(){
   // Technical
   checks.technical.push({label:"HTTPS", ok: url.startsWith("https://")});
   checks.technical.push({label:"Viewport Meta", ok: html.includes("viewport")});
-  checks.technical.push({label:"ads.txt Valid Format", ok: await EnhancedAdsenseChecks.checkAdsTxt(url, fetchHtml)});
-
-  // Performance placeholder
-  checks.performance.push({label:"Basic Speed
+  checks.technical.push
