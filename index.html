@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Free AdSense Readiness & SEO Pre-Checker</title>
+  <title>Free AdSense Technical Readiness & SEO Pre-Checker</title>
   <style>
-    body { font-family: Inter, Arial, sans-serif; background:#f5f7fa; margin:0; line-height:1.6; }
+    body { font-family: Inter, Arial, sans-serif; background:#f5f7fa; margin:0; }
     header { background:#2d3748; color:#fff; padding:15px 30px; font-size:18px; font-weight:600; }
     .container { max-width:900px; margin:40px auto; background:#fff; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); padding:30px; }
     h1 { font-size:24px; margin-bottom:10px; color:#2d3748; }
@@ -28,9 +28,7 @@
   </style>
 </head>
 <body>
-  <header>Free AdSense Readiness & SEO Pre-Checker</header>
-
-  <!-- Checker -->
+  <header>Free AdSense Technical Readiness & SEO Pre-Checker</header>
   <div class="container">
     <h1>Technical Audit & Eligibility Indicators</h1>
     <p>Paste HTML or enter a URL below:</p>
@@ -129,11 +127,4 @@ async function checkPolicyPages(baseUrl, homepageHtml){
     for(const path of paths[label]){
       let fullUrl = baseUrl.replace(/\/$/, "") + path;
       try {
-        const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(fullUrl);
-        const res = await fetch(endpoint);
-        if(res.ok){
-          const html = await res.text();
-          if(html.trim() === homepageHtml.trim()) continue;
-          const text = html.replace(/<[^>]*>/g," ").trim();
-          const wordCount = text.split(/\s+/).length;
-          const keyword
+        const endpoint = "https://misty-credit-b188.paulineanand89
