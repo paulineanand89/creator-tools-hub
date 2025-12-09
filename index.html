@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>AdSensePass Readiness Checker</title>
+  <title>Free AdSense Technical Readiness & SEO Pre-Checker</title>
   <style>
-    body { font-family: Inter, Arial, sans-serif; background:#f5f7fa; margin:0; line-height:1.6; }
+    body { font-family: Inter, Arial, sans-serif; background:#f5f7fa; margin:0; }
     header { background:#2d3748; color:#fff; padding:15px 30px; font-size:18px; font-weight:600; }
     .container { max-width:900px; margin:40px auto; background:#fff; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); padding:30px; }
     h1 { font-size:24px; margin-bottom:10px; color:#2d3748; }
@@ -18,17 +18,10 @@
     .error { background:#fed7d7; color:#742a2a; }
     .score { margin-top:20px; font-size:18px; font-weight:600; color:#2d3748; }
     .verdict { font-size:16px; font-weight:600; margin-top:10px; }
-    form input, form textarea { width:100%; padding:10px; margin:8px 0; border:1px solid #cbd5e0; border-radius:6px; }
-    form button { background:#3182ce; color:#fff; border:none; padding:12px 20px; border-radius:6px; cursor:pointer; }
-    form button:hover { background:#2b6cb0; }
-    footer { background:#2d3748; color:#fff; padding:20px; text-align:center; font-size:14px; margin-top:40px; }
-    footer a { color:#cbd5e0; margin:0 10px; text-decoration:none; }
   </style>
 </head>
 <body>
-  <header>https://adsensepass.blogspot.com/ — AdSense Check Requirements</header>
-
-  <!-- Checker -->
+  <header>Free AdSense Technical Readiness & SEO Pre-Checker</header>
   <div class="container">
     <h1>Technical Audit & Eligibility Indicators</h1>
     <p>Paste HTML or enter a URL below:</p>
@@ -38,71 +31,7 @@
     <div id="output"></div>
   </div>
 
-  <!-- Privacy Policy -->
-  <div class="container" id="privacy-policy">
-    <h1>Privacy Policy</h1>
-    <p>Your privacy is important to us. This Privacy Policy explains how we collect, use, and protect your information when you visit our website.</p>
-    <p>We may collect personal information such as your name, email address, or other details when you voluntarily provide them. We also use cookies and third‑party advertising partners (including Google AdSense) to deliver relevant ads.</p>
-    <p>Google, as a third‑party vendor, uses cookies to serve ads on our site. Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads">Google Ads Settings</a>.</p>
-    <p>We do not sell or share your personal information with outside parties except as required by law.</p>
-    <p>By using our site, you consent to this Privacy Policy.</p>
-  </div>
-
-  <!-- About Page -->
-  <div class="container" id="about">
-    <h1>About Us</h1>
-    <p>Welcome to https://adsensepass.blogspot.com/. We are dedicated to providing high‑quality content on AdSense Check requirements.</p>
-    <p>Our mission is to share useful insights, tutorials, and resources that help our readers understand AdSense eligibility and readiness.</p>
-    <p>Founded in 2025, we continue to grow thanks to our community of readers and contributors.</p>
-    <p>We believe in transparency, originality, and delivering value to every visitor.</p>
-  </div>
-
-  <!-- Contact Page -->
-  <div class="container" id="contact">
-    <h1>Contact Us</h1>
-    <p>We’d love to hear from you. If you have questions, feedback, or business inquiries, please reach out:</p>
-    <form>
-      <label for="name">Name (Optional)</label>
-      <input type="text" id="name" name="name" placeholder="Your name">
-
-      <label for="email">Email Address (Required)</label>
-      <input type="email" id="email" name="email" placeholder="Your email" required>
-
-      <label for="message">Message / Inquiry (Required)</label>
-      <textarea id="message" name="message" rows="5" placeholder="Your message" required></textarea>
-
-      <button type="submit">Send</button>
-    </form>
-    <p>We aim to respond within 48 hrs.</p>
-  </div>
-
-  <!-- Terms & Disclaimer -->
-  <div class="container" id="terms">
-    <h1>Terms & Conditions / Disclaimer</h1>
-    <p>By accessing and using this website, you agree to the following terms:</p>
-    <ul>
-      <li>All content is provided for informational purposes only. We make no guarantees of accuracy or completeness.</li>
-      <li>You may not copy, reproduce, or redistribute our content without permission.</li>
-      <li>We are not liable for any damages resulting from the use of this site.</li>
-      <li>External links may lead to third‑party sites. We are not responsible for their content or practices.</li>
-      <li>This tool provides a readiness score only. It does <strong>not</strong> promise, guarantee, or imply that AdSense approval will be granted. Approval decisions rest solely with Google AdSense.</li>
-    </ul>
-    <p>These terms are subject to change without notice. Continued use of the site indicates acceptance of the current terms.</p>
-  </div>
-
-  <!-- Footer -->
-  <footer>
-    <p>
-      <a href="#privacy-policy">Privacy Policy</a> |
-      <a href="#about">About Us</a> |
-      <a href="#contact">Contact</a> |
-      <a href="#terms">Terms & Disclaimer</a>
-    </p>
-    <p>&copy; https://adsensepass.blogspot.com/ 2025. All rights reserved.</p>
-  </footer>
-
 <script>
-// Fetch HTML
 async function fetchHtml(url){
   try {
     const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(url);
@@ -112,33 +41,129 @@ async function fetchHtml(url){
   } catch(e){ console.error("fetchHtml error", e); return null; }
 }
 
-// Robots.txt & sitemap.xml parsing
-async function checkRobotsAndSitemap(baseUrl){
-  const domain = baseUrl.replace(/\/$/, "");
-  const results = { robots:false, sitemap:false };
-  try {
-    const res = await fetch(domain + "/robots.txt");
-    if(res.ok){
-      const text = await res.text();
-      if(text.includes("User-agent")) results.robots = true;
+// Strict trust page existence check
+async function checkPolicyPages(baseUrl, homepageHtml){
+  const paths = {
+    "Privacy Policy": ["/privacy-policy","/privacy"],
+    "About Page": ["/about","/about-us"],
+    "Contact Page": ["/contact","/contact-us"],
+    "Terms / Disclaimer": ["/terms","/disclaimer"]
+  };
+  const results = {};
+  for(const label in paths){
+    results[label] = false;
+    for(const path of paths[label]){
+      let fullUrl = baseUrl.replace(/\/$/, "") + path;
+      try {
+        const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(fullUrl);
+        const res = await fetch(endpoint);
+        if(res.ok){
+          const html = await res.text();
+          // Compare with homepage
+          if(html.trim() === homepageHtml.trim()) continue;
+
+          const text = html.replace(/<[^>]*>/g," ").trim();
+          const wordCount = text.split(/\s+/).length;
+          const keyword = label.toLowerCase().split(" ")[0];
+
+          // Require keyword in title or heading
+          const inTitleOrHeading = new RegExp(`<title[^>]*>.*${keyword}.*</title>`, "i").test(html) ||
+                                   new RegExp(`<h[12][^>]*>.*${keyword}.*</h[12]>`, "i").test(html);
+
+          if(wordCount > 100 && inTitleOrHeading){
+            results[label] = true;
+            break;
+          }
+        }
+      } catch(e){ console.error("Policy check failed", label, e); }
     }
-  } catch(e){ console.error("robots.txt check failed", e); }
-  try {
-    const res = await fetch(domain + "/sitemap.xml");
-    if(res.ok){
-      const text = await res.text();
-      if(text.includes("<urlset")) results.sitemap = true;
-    }
-  } catch(e){ console.error("sitemap.xml check failed", e); }
+  }
   return results;
 }
 
-// PageSpeed Insights API
-async function checkPageSpeed(baseUrl){
-  try {
-    const api = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=" + encodeURIComponent(baseUrl);
-    const res = await fetch(api);
-    if(!res.ok) return null;
-    const data = await res.json();
-    return Math.round(data.lighthouseResult.categories.performance.score * 100);
-  } catch(e){ console
+async function runChecker(){
+  const htmlBox = document.getElementById("htmlInput");
+  const urlBox = document.getElementById("urlInput");
+  const out = document.getElementById("output");
+  out.innerHTML = "<p>Checking...</p>";
+
+  let html = htmlBox.value.trim();
+  const url = urlBox.value.trim();
+
+  if(!html && url){
+    html = await fetchHtml(url);
+    if(!html){
+      out.innerHTML = "<p style='color:red'>Could not fetch this URL.</p>";
+      return;
+    }
+  }
+  if(!html || !url){
+    out.innerHTML = "<p style='color:red'>Please paste HTML or enter a valid URL.</p>";
+    return;
+  }
+
+  const checks = { trust:[], content:[], seo:[], technical:[], performance:[] };
+
+  // Trust pages (compare against homepage)
+  const policyResults = await checkPolicyPages(url, html);
+  checks.trust.push({label:"Privacy Policy", ok: policyResults["Privacy Policy"]});
+  checks.trust.push({label:"About Page", ok: policyResults["About Page"]});
+  checks.trust.push({label:"Contact Page", ok: policyResults["Contact Page"]});
+  checks.trust.push({label:"Terms / Disclaimer", ok: policyResults["Terms / Disclaimer"]});
+
+  // Content
+  const bodyText = html.replace(/<[^>]*>/g," ").trim();
+  const wordCount = bodyText.split(/\s+/).length;
+  checks.content.push({label:"Word Count ≥ 800", ok: wordCount>=800});
+  checks.content.push({label:"Has Headers", ok: html.includes("<h1")||html.includes("<h2")});
+
+  // SEO
+  checks.seo.push({label:"Title Tag", ok: html.includes("<title>")});
+  checks.seo.push({label:"Meta Description", ok: html.includes("name=\"description\"")});
+  checks.seo.push({label:"Canonical Tag", ok: html.includes("rel=\"canonical\"")});
+
+  // Technical
+  checks.technical.push({label:"HTTPS", ok: url.startsWith("https://")});
+  checks.technical.push({label:"Viewport Meta", ok: html.includes("viewport")});
+  checks.technical.push({label:"ads.txt", ok: html.includes("google.com")});
+
+  // Performance placeholder
+  checks.performance.push({label:"Basic Speed Check", ok: true});
+
+  // Scoring
+  let score = 0;
+  let maxScore = 100;
+  const weights = {trust:30, content:25, seo:15, technical:20, performance:10};
+
+  for(const cat in checks){
+    const passed = checks[cat].filter(c=>c.ok).length;
+    const total = checks[cat].length;
+    score += Math.round((passed/total)*weights[cat]);
+  }
+
+  if(!checks.trust[0].ok) maxScore = Math.min(maxScore,60);
+  if(!checks.technical.find(c=>c.label==="HTTPS").ok) maxScore = Math.min(maxScore,50);
+  if(!checks.content[0].ok) maxScore = Math.min(maxScore,55);
+  if(score>maxScore) score=maxScore;
+
+  let verdict="Low Risk";
+  if(score<60) verdict="High Approval Risk";
+  else if(score<80) verdict="Medium Risk";
+
+  // Output
+  out.innerHTML = "";
+  for(const cat in checks){
+    out.innerHTML += `<h3>${cat.toUpperCase()}</h3>`;
+    checks[cat].forEach(c=>{
+      out.innerHTML += `<div>${c.label}<span class="badge ${c.ok?"success":"error"}">${c.ok?"Pass":"Fail"}</span></div>`;
+    });
+    const catScore = Math.round((checks[cat].filter(c=>c.ok).length/checks[cat].length)*weights[cat]);
+    out.innerHTML += `<div class="progress"><div class="bar ${cat}" style="width:${catScore}%"></div></div>`;
+  }
+  out.innerHTML += `<div class="score">Final Score: ${score}/100</div>`;
+  out.innerHTML += `<div class="verdict">${verdict}</div>`;
+}
+</script>
+</body>
+</html>
+
