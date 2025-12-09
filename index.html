@@ -59,17 +59,12 @@ async function checkPolicyPages(baseUrl, homepageHtml){
         const res = await fetch(endpoint);
         if(res.ok){
           const html = await res.text();
-          // Compare with homepage
           if(html.trim() === homepageHtml.trim()) continue;
-
           const text = html.replace(/<[^>]*>/g," ").trim();
           const wordCount = text.split(/\s+/).length;
           const keyword = label.toLowerCase().split(" ")[0];
-
-          // Require keyword in title or heading
-          const inTitleOrHeading = new RegExp(`<title[^>]*>.*${keyword}.*</title>`, "i").test(html) ||
-                                   new RegExp(`<h[12][^>]*>.*${keyword}.*</h[12]>`, "i").test(html);
-
+          const inTitleOrHeading = new RegExp(`<title[^>]*>.*${keyword}.*</title>`,"i").test(html) ||
+                                   new RegExp(`<h[12][^>]*>.*${keyword}.*</h[12]>`,"i").test(html);
           if(wordCount > 100 && inTitleOrHeading){
             results[label] = true;
             break;
@@ -79,6 +74,33 @@ async function checkPolicyPages(baseUrl, homepageHtml){
     }
   }
   return results;
+}
+
+// Robots.txt & sitemap.xml parsing
+async function checkRobotsAndSitemap(baseUrl, fetchProxy){
+  const domain = baseUrl.replace(/\/$/, "");
+  const results = { robots:false, sitemap:false };
+  try {
+    const robots = await fetchProxy(domain + "/robots.txt");
+    if(robots && robots.includes("User-agent")) results.robots = true;
+  } catch(e){}
+  try {
+    const sitemap = await fetchProxy(domain + "/sitemap.xml");
+    if(sitemap && sitemap.includes("<urlset")) results.sitemap = true;
+  } catch(e){}
+  return results;
+}
+
+// PageSpeed Insights API
+async function checkPageSpeed(baseUrl){
+  try {
+    const api = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=" + encodeURIComponent(baseUrl);
+    const res = await fetch(api);
+    if(!res.ok) return null;
+    const data = await res.json();
+    const perfScore = data.lighthouseResult.categories.performance.score;
+    return Math.round(perfScore * 100);
+  } catch(e){ return null; }
 }
 
 async function runChecker(){
@@ -104,7 +126,7 @@ async function runChecker(){
 
   const checks = { trust:[], content:[], seo:[], technical:[], performance:[] };
 
-  // Trust pages (compare against homepage)
+  // Trust pages
   const policyResults = await checkPolicyPages(url, html);
   checks.trust.push({label:"Privacy Policy", ok: policyResults["Privacy Policy"]});
   checks.trust.push({label:"About Page", ok: policyResults["About Page"]});
@@ -127,8 +149,14 @@ async function runChecker(){
   checks.technical.push({label:"Viewport Meta", ok: html.includes("viewport")});
   checks.technical.push({label:"ads.txt", ok: html.includes("google.com")});
 
-  // Performance placeholder
-  checks.performance.push({label:"Basic Speed Check", ok: true});
+  // Robots & Sitemap
+  const robotsSitemap = await checkRobotsAndSitemap(url, fetchHtml);
+  checks.technical.push({label:"robots.txt Present & Valid", ok: robotsSitemap.robots});
+  checks.technical.push({label:"sitemap.xml Present & Valid", ok: robotsSitemap.sitemap});
+
+  // Performance (PageSpeed)
+  const perfScore = await checkPageSpeed(url);
+  checks.performance.push({label:"Google PageSpeed Score ≥ 70", ok: perfScore !== null && perfScore >= 70});
 
   // Scoring
   let score = 0;
@@ -142,27 +170,4 @@ async function runChecker(){
   }
 
   if(!checks.trust[0].ok) maxScore = Math.min(maxScore,60);
-  if(!checks.technical.find(c=>c.label==="HTTPS").ok) maxScore = Math.min(maxScore,50);
-  if(!checks.content[0].ok) maxScore = Math.min(maxScore,55);
-  if(score>maxScore) score=maxScore;
-
-  let verdict="Low Risk";
-  if(score<60) verdict="High Approval Risk";
-  else if(score<80) verdict="Medium Risk";
-
-  // Output
-  out.innerHTML = "";
-  for(const cat in checks){
-    out.innerHTML += `<h3>${cat.toUpperCase()}</h3>`;
-    checks[cat].forEach(c=>{
-      out.innerHTML += `<div>${c.label}<span class="badge ${c.ok?"success":"error"}">${c.ok?"Pass":"Fail"}</span></div>`;
-    });
-    const catScore = Math.round((checks[cat].filter(c=>c.ok).length/checks[cat].length)*weights[cat]);
-    out.innerHTML += `<div class="progress"><div class="bar ${cat}" style="width:${catScore}%"></div></div>`;
-  }
-  out.innerHTML += `<div class="score">Final Score: ${score}/100</div>`;
-  out.innerHTML += `<div class="verdict">${verdict}</div>`;
-}
-</script>
-</body>
-</html>
+  if(!checks.technical.find(c=>c.label==="HTTPS").ok
