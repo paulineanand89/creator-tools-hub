@@ -41,7 +41,39 @@ async function fetchHtml(url){
   } catch(e){ console.error("fetchHtml error", e); return null; }
 }
 
-// Strict trust page existence check
+// Robots.txt & sitemap.xml parsing
+async function checkRobotsAndSitemap(baseUrl){
+  const domain = baseUrl.replace(/\/$/, "");
+  const results = { robots:false, sitemap:false };
+  try {
+    const res = await fetch(domain + "/robots.txt");
+    if(res.ok){
+      const text = await res.text();
+      if(text.includes("User-agent")) results.robots = true;
+    }
+  } catch(e){ console.error("robots.txt check failed", e); }
+  try {
+    const res = await fetch(domain + "/sitemap.xml");
+    if(res.ok){
+      const text = await res.text();
+      if(text.includes("<urlset")) results.sitemap = true;
+    }
+  } catch(e){ console.error("sitemap.xml check failed", e); }
+  return results;
+}
+
+// PageSpeed Insights API
+async function checkPageSpeed(baseUrl){
+  try {
+    const api = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=" + encodeURIComponent(baseUrl);
+    const res = await fetch(api);
+    if(!res.ok) return null;
+    const data = await res.json();
+    return Math.round(data.lighthouseResult.categories.performance.score * 100);
+  } catch(e){ console.error("PageSpeed check failed", e); return null; }
+}
+
+// Trust page existence check
 async function checkPolicyPages(baseUrl, homepageHtml){
   const paths = {
     "Privacy Policy": ["/privacy-policy","/privacy"],
@@ -74,33 +106,6 @@ async function checkPolicyPages(baseUrl, homepageHtml){
     }
   }
   return results;
-}
-
-// Robots.txt & sitemap.xml parsing
-async function checkRobotsAndSitemap(baseUrl, fetchProxy){
-  const domain = baseUrl.replace(/\/$/, "");
-  const results = { robots:false, sitemap:false };
-  try {
-    const robots = await fetchProxy(domain + "/robots.txt");
-    if(robots && robots.includes("User-agent")) results.robots = true;
-  } catch(e){}
-  try {
-    const sitemap = await fetchProxy(domain + "/sitemap.xml");
-    if(sitemap && sitemap.includes("<urlset")) results.sitemap = true;
-  } catch(e){}
-  return results;
-}
-
-// PageSpeed Insights API
-async function checkPageSpeed(baseUrl){
-  try {
-    const api = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=" + encodeURIComponent(baseUrl);
-    const res = await fetch(api);
-    if(!res.ok) return null;
-    const data = await res.json();
-    const perfScore = data.lighthouseResult.categories.performance.score;
-    return Math.round(perfScore * 100);
-  } catch(e){ return null; }
 }
 
 async function runChecker(){
@@ -150,12 +155,14 @@ async function runChecker(){
   checks.technical.push({label:"ads.txt", ok: html.includes("google.com")});
 
   // Robots & Sitemap
-  const robotsSitemap = await checkRobotsAndSitemap(url, fetchHtml);
+  let robotsSitemap = {robots:false, sitemap:false};
+  try { robotsSitemap = await checkRobotsAndSitemap(url); } catch(e){}
   checks.technical.push({label:"robots.txt Present & Valid", ok: robotsSitemap.robots});
   checks.technical.push({label:"sitemap.xml Present & Valid", ok: robotsSitemap.sitemap});
 
   // Performance (PageSpeed)
-  const perfScore = await checkPageSpeed(url);
+  let perfScore = null;
+  try { perfScore = await checkPageSpeed(url); } catch(e){}
   checks.performance.push({label:"Google PageSpeed Score ≥ 70", ok: perfScore !== null && perfScore >= 70});
 
   // Scoring
@@ -163,11 +170,4 @@ async function runChecker(){
   let maxScore = 100;
   const weights = {trust:30, content:25, seo:15, technical:20, performance:10};
 
-  for(const cat in checks){
-    const passed = checks[cat].filter(c=>c.ok).length;
-    const total = checks[cat].length;
-    score += Math.round((passed/total)*weights[cat]);
-  }
-
-  if(!checks.trust[0].ok) maxScore = Math.min(maxScore,60);
-  if(!checks.technical.find(c=>c.label==="HTTPS").ok
+  for(const
