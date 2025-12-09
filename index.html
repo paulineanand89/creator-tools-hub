@@ -18,12 +18,6 @@
     .error { background:#fed7d7; color:#742a2a; }
     .score { margin-top:20px; font-size:18px; font-weight:600; color:#2d3748; }
     .verdict { font-size:16px; font-weight:600; margin-top:10px; }
-    .affiliate { margin-top:20px; padding:15px; background:#f7fafc; border:1px solid #e2e8f0; border-radius:6px; }
-    .trust { background:#48bb78; }
-    .content { background:#ed8936; }
-    .seo { background:#4299e1; }
-    .technical { background:#9f7aea; }
-    .performance { background:#f6e05e; }
   </style>
 </head>
 <body>
@@ -38,17 +32,15 @@
   </div>
 
 <script>
-// Proxy fetch
 async function fetchHtml(url){
   try {
     const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(url);
     const res = await fetch(endpoint);
     if(!res.ok) return null;
     return await res.text();
-  } catch(e){ return null; }
+  } catch(e){ console.error("fetchHtml error", e); return null; }
 }
 
-// Strict trust page existence (no keyword scanning)
 async function checkPolicyPages(baseUrl){
   const paths = {
     "Privacy Policy": ["/privacy-policy","/privacy"],
@@ -64,11 +56,8 @@ async function checkPolicyPages(baseUrl){
       try {
         const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(fullUrl);
         const res = await fetch(endpoint);
-        if(res.ok){
-          results[label] = true; // mark as existing if page returns 200 OK
-          break;
-        }
-      } catch(e){ /* ignore */ }
+        if(res.ok){ results[label] = true; break; }
+      } catch(e){ console.error("Policy check failed", label, e); }
     }
   }
   return results;
@@ -97,31 +86,30 @@ async function runChecker(){
 
   const checks = { trust:[], content:[], seo:[], technical:[], performance:[] };
 
-  // Trust pages (existence only)
+  // Trust pages
   const policyResults = await checkPolicyPages(url);
   checks.trust.push({label:"Privacy Policy", ok: policyResults["Privacy Policy"]});
   checks.trust.push({label:"About Page", ok: policyResults["About Page"]});
   checks.trust.push({label:"Contact Page", ok: policyResults["Contact Page"]});
   checks.trust.push({label:"Terms / Disclaimer", ok: policyResults["Terms / Disclaimer"]});
 
-  // Content quality
+  // Content
   const bodyText = html.replace(/<[^>]*>/g," ").trim();
   const wordCount = bodyText.split(/\s+/).length;
   checks.content.push({label:"Word Count ≥ 800", ok: wordCount>=800});
   checks.content.push({label:"Has Headers", ok: html.includes("<h1")||html.includes("<h2")});
 
-  // SEO basics
+  // SEO
   checks.seo.push({label:"Title Tag", ok: html.includes("<title>")});
   checks.seo.push({label:"Meta Description", ok: html.includes("name=\"description\"")});
   checks.seo.push({label:"Canonical Tag", ok: html.includes("rel=\"canonical\"")});
 
   // Technical
   checks.technical.push({label:"HTTPS", ok: url.startsWith("https://")});
-  checks.technical.push({label:"robots.txt", ok: true}); // simplified
   checks.technical.push({label:"Viewport Meta", ok: html.includes("viewport")});
   checks.technical.push({label:"ads.txt", ok: html.includes("google.com")});
 
-  // Performance (placeholder)
+  // Performance placeholder
   checks.performance.push({label:"Basic Speed Check", ok: true});
 
   // Scoring
@@ -136,7 +124,7 @@ async function runChecker(){
   }
 
   if(!checks.trust[0].ok) maxScore = Math.min(maxScore,60);
-  if(!checks.technical[0].ok) maxScore = Math.min(maxScore,50);
+  if(!checks.technical.find(c=>c.label==="HTTPS").ok) maxScore = Math.min(maxScore,50);
   if(!checks.content[0].ok) maxScore = Math.min(maxScore,55);
   if(score>maxScore) score=maxScore;
 
@@ -157,4 +145,7 @@ async function runChecker(){
   out.innerHTML += `<div class="score">Final Score: ${score}/100</div>`;
   out.innerHTML += `<div class="verdict">${verdict}</div>`;
   out.innerHTML += `<button onclick="window.print()">Download Free Report (PDF)</button>`;
-  out.innerHTML += `<div class="affiliate"><strong>Recommended Tools:</strong><br>Improve speed with Hostinger<br>Use Cloudflare Free CDN<br>Install RankMath SEO Plugin</div
+}
+</script>
+</body>
+</html>
