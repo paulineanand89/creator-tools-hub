@@ -2,12 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>AdSensePass Trust Pages</title>
+  <title>AdSensePass Readiness Checker</title>
   <style>
     body { font-family: Inter, Arial, sans-serif; background:#f5f7fa; margin:0; line-height:1.6; }
     header { background:#2d3748; color:#fff; padding:15px 30px; font-size:18px; font-weight:600; }
     .container { max-width:900px; margin:40px auto; background:#fff; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); padding:30px; }
     h1 { font-size:24px; margin-bottom:10px; color:#2d3748; }
+    textarea, input[type="text"] { width:100%; padding:12px; margin:10px 0; border:1px solid #cbd5e0; border-radius:6px; font-size:14px; }
+    button { background:#3182ce; color:#fff; border:none; padding:12px 20px; border-radius:6px; font-size:14px; cursor:pointer; transition:background 0.2s; }
+    button:hover { background:#2b6cb0; }
+    .progress { background:#edf2f7; border-radius:6px; overflow:hidden; margin:10px 0; height:14px; }
+    .bar { height:14px; background:#ccc; }
+    .badge { display:inline-block; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; margin-left:10px; }
+    .success { background:#c6f6d5; color:#22543d; }
+    .error { background:#fed7d7; color:#742a2a; }
+    .score { margin-top:20px; font-size:18px; font-weight:600; color:#2d3748; }
+    .verdict { font-size:16px; font-weight:600; margin-top:10px; }
     form input, form textarea { width:100%; padding:10px; margin:8px 0; border:1px solid #cbd5e0; border-radius:6px; }
     form button { background:#3182ce; color:#fff; border:none; padding:12px 20px; border-radius:6px; cursor:pointer; }
     form button:hover { background:#2b6cb0; }
@@ -17,6 +27,16 @@
 </head>
 <body>
   <header>https://adsensepass.blogspot.com/ — AdSense Check Requirements</header>
+
+  <!-- Checker -->
+  <div class="container">
+    <h1>Technical Audit & Eligibility Indicators</h1>
+    <p>Paste HTML or enter a URL below:</p>
+    <textarea id="htmlInput" rows="8" placeholder="Paste full HTML here..."></textarea>
+    <input type="text" id="urlInput" placeholder="Or enter a full URL (https://...)">
+    <button onclick="runChecker()">Run Pre-Check</button>
+    <div id="output"></div>
+  </div>
 
   <!-- Privacy Policy -->
   <div class="container" id="privacy-policy">
@@ -81,15 +101,44 @@
     <p>&copy; https://adsensepass.blogspot.com/ 2025. All rights reserved.</p>
   </footer>
 
-  <!-- Example Disclaimer under results section of checker -->
-  <script>
-    function showDisclaimer(){
-      const out = document.getElementById("output");
-      if(out){
-        out.innerHTML += "<p style='margin-top:20px; font-size:13px; color:#555;'>Disclaimer: This tool provides a readiness score only. It does not promise, guarantee, or imply that AdSense approval will be granted. Approval decisions rest solely with Google AdSense.</p>";
-      }
+<script>
+// Fetch HTML
+async function fetchHtml(url){
+  try {
+    const endpoint = "https://misty-credit-b188.paulineanand89.workers.dev/?url=" + encodeURIComponent(url);
+    const res = await fetch(endpoint);
+    if(!res.ok) return null;
+    return await res.text();
+  } catch(e){ console.error("fetchHtml error", e); return null; }
+}
+
+// Robots.txt & sitemap.xml parsing
+async function checkRobotsAndSitemap(baseUrl){
+  const domain = baseUrl.replace(/\/$/, "");
+  const results = { robots:false, sitemap:false };
+  try {
+    const res = await fetch(domain + "/robots.txt");
+    if(res.ok){
+      const text = await res.text();
+      if(text.includes("User-agent")) results.robots = true;
     }
-    // Call showDisclaimer() after rendering results in your checker
-  </script>
-</body>
-</html>
+  } catch(e){ console.error("robots.txt check failed", e); }
+  try {
+    const res = await fetch(domain + "/sitemap.xml");
+    if(res.ok){
+      const text = await res.text();
+      if(text.includes("<urlset")) results.sitemap = true;
+    }
+  } catch(e){ console.error("sitemap.xml check failed", e); }
+  return results;
+}
+
+// PageSpeed Insights API
+async function checkPageSpeed(baseUrl){
+  try {
+    const api = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=" + encodeURIComponent(baseUrl);
+    const res = await fetch(api);
+    if(!res.ok) return null;
+    const data = await res.json();
+    return Math.round(data.lighthouseResult.categories.performance.score * 100);
+  } catch(e){ console
